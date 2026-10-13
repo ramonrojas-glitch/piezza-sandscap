@@ -1,0 +1,471 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>PIEZZA Pizzería — Santo Domingo</title>
+<meta name="description" content="PIEZZA Pizzería: pizzas hechas al momento en Santo Domingo. Escoge tu pieza, tamaño e ingredientes y pide por WhatsApp.">
+<meta name="theme-color" content="#B3172E">
+<link rel="canonical" href="https://piezza.sandscap.com.do/">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://piezza.sandscap.com.do/">
+<meta property="og:title" content="PIEZZA Pizzería">
+<meta property="og:description" content="Pizza hecha al momento, una pieza a la vez.">
+<meta property="og:image" content="https://piezza.sandscap.com.do/images/og.jpg">
+<link rel="icon" type="image/png" href="images/favicon.png">
+<link rel="apple-touch-icon" href="images/apple-touch-icon.png">
+<link rel="preload" as="image" href="images/pepperoni.webp">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT@9..144,700..900,100&family=Poppins:wght@400;500;600&display=swap">
+<style>
+:root{--red:#B3172E}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:#fff;font-family:Poppins,system-ui,sans-serif;color:#241A17;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+a{color:var(--red)}a:hover{color:#7E0E1F}
+button{font-family:inherit}
+:focus-visible{outline:3px solid #F2A43A;outline-offset:2px}
+.disp{font-family:Fraunces,Georgia,serif;font-variation-settings:"SOFT" 100,"opsz" 144;font-weight:850;letter-spacing:-0.01em}
+.wrap{max-width:1280px;margin:0 auto;padding:0 40px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+
+.nav{position:relative;z-index:6;display:flex;align-items:center;justify-content:space-between;gap:24px;padding:22px 40px;max-width:1360px;margin:0 auto}
+.navlogo{height:56px;width:auto;display:block}
+.navlinks{display:flex;align-items:center;gap:8px}
+.navlink{color:#241A17;text-decoration:none;font-weight:500;font-size:15px;padding:12px 14px;border-radius:999px}
+.navlink:hover{color:var(--red);background:#FBF1EE}
+.cartbtn{position:relative;width:48px;height:48px;border-radius:999px;border:1px solid #EADFDB;background:#fff;display:grid;place-items:center;cursor:pointer;color:#241A17}
+.cartbtn:hover{border-color:var(--red);color:var(--red)}
+.badge{position:absolute;top:-4px;right:-4px;min-width:22px;height:22px;padding:0 6px;border-radius:999px;background:var(--red);color:#fff;font-size:12px;font-weight:600;display:grid;place-items:center}
+.badge[hidden]{display:none}
+.bump{animation:bump .35s ease}
+@keyframes bump{40%{transform:scale(1.25)}}
+
+.hero{position:relative;overflow:hidden;height:900px;background:#fff}
+.hero-head{position:relative;z-index:4;text-align:center;padding-top:8px}
+.kicker{margin:0;color:#6E625D;font-size:17px}
+.title{margin:6px 0 0;font-size:68px;line-height:1.02;color:var(--red)}
+.sizes{display:flex;justify-content:center;gap:18px;margin-top:22px}
+.size{width:48px;height:48px;border-radius:999px;border:1.5px solid #E2D6D2;background:#fff;color:#8A7D78;font-weight:600;font-size:15px;cursor:pointer;transition:border-color .2s,color .2s,box-shadow .2s}
+.size:hover{border-color:var(--red);color:var(--red)}
+.size[aria-pressed="true"]{border-color:var(--red);color:var(--red);box-shadow:0 0 0 4px #FBE9E8}
+.sizecap{margin:10px 0 0;font-size:13px;color:#6E625D}
+.side{position:absolute;z-index:4;top:300px;width:300px}
+.side.l{left:max(40px,calc(50% - 600px))}
+.side.r{right:max(40px,calc(50% - 600px));text-align:right;display:flex;flex-direction:column;align-items:flex-end}
+.desc{margin:0;font-size:17px;line-height:1.6;color:#3A2E2A}
+.ghostbtn{margin-top:20px;display:inline-flex;align-items:center;gap:8px;height:44px;padding:0 18px;border-radius:10px;border:1.5px solid #E7B9B9;background:#fff;color:var(--red);font-weight:600;font-size:14px;cursor:pointer}
+.ghostbtn:hover,.ghostbtn[aria-expanded="true"]{border-color:var(--red);background:#FFF7F6}
+.chips{display:grid;grid-template-columns:repeat(2,max-content);gap:8px;margin-top:14px}
+.chips[hidden]{display:none}
+.chip{display:inline-flex;align-items:center;gap:6px;height:44px;padding:0 14px;border-radius:999px;border:1.5px solid #EADFDB;background:#fff;color:#3A2E2A;font-weight:500;font-size:13px;cursor:pointer}
+.chip span{color:#6E625D}
+.chip[aria-pressed="true"]{background:var(--red);border-color:var(--red);color:#fff}
+.chip[aria-pressed="true"] span{color:#FFE3E3}
+.promo{margin:0;font-size:14px;line-height:1.55;color:#6E625D}
+.promo b{color:#3A2E2A;font-weight:600}
+.price{margin:14px 0 0;font-size:34px;line-height:1;color:#241A17}
+.addbtn{margin-top:18px;height:52px;padding:0 26px;border:0;border-radius:12px;background:var(--red);color:#fff;font-weight:600;font-size:15px;letter-spacing:.02em;cursor:pointer;box-shadow:0 10px 24px -8px rgba(179,23,46,.55);display:inline-flex;align-items:center;justify-content:center;gap:10px;transition:transform .15s,background .2s;min-width:220px}
+.addbtn:hover{background:#9A1227;transform:translateY(-1px)}
+
+/* one element at a time — never two layered */
+.tx{transition:opacity .28s ease,transform .28s ease}
+.tx.out{opacity:0;transform:translateY(-12px)}
+.tx.pre{opacity:0;transform:translateY(12px);transition:none}
+
+.stage{position:absolute;z-index:2;left:50%;bottom:0;width:820px;height:440px;transform:translateX(-50%)}
+.arrows{position:absolute;z-index:5;left:50%;top:-74px;transform:translateX(-50%);display:flex;align-items:center;gap:150px}
+.arrow{width:64px;height:48px;border:0;background:transparent;cursor:pointer;display:grid;place-items:center;border-radius:12px;color:#9A8E89}
+.arrow.nx{color:var(--red)}
+.arrow:hover{background:#FBF1EE;color:var(--red)}
+.counter{position:absolute;left:50%;top:-58px;transform:translateX(-50%);margin:0;font-size:13px;letter-spacing:.12em;color:#6E625D;font-weight:500}
+.wheel{position:absolute;left:0;top:0;width:820px;height:820px}
+.pz{position:absolute;inset:0;transition:transform .55s cubic-bezier(.2,.85,.25,1)}
+.pz.out{transition:transform .42s cubic-bezier(.55,0,.85,.35)}
+.pz.out.r{transform:translateY(118%) rotate(-150deg)}
+.pz.out.l{transform:translateY(118%) rotate(150deg)}
+.pz.pre{transition:none}
+.pz.pre.r{transform:translateY(118%) rotate(150deg)}
+.pz.pre.l{transform:translateY(118%) rotate(-150deg)}
+.ring{position:absolute;inset:0;width:100%;height:100%}
+.pizza{position:absolute;left:4.88%;top:4.88%;width:90.24%;height:90.24%;border-radius:50%;animation:spin 90s linear infinite;filter:drop-shadow(0 18px 30px rgba(90,10,18,.28))}
+@keyframes spin{to{transform:rotate(360deg)}}
+.deco{position:absolute;z-index:1;pointer-events:none}
+
+.menu{background:#FBF6F1;padding:96px 0 104px}
+.eyebrow{margin:0;color:var(--red);font-weight:600;font-size:13px;letter-spacing:.18em;text-transform:uppercase}
+.h2{margin:10px 0 0;font-size:52px;line-height:1.05;color:#241A17}
+.lead{margin:14px 0 0;max-width:560px;font-size:17px;line-height:1.6;color:#5C504B}
+.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:24px;margin-top:48px}
+.card{position:relative;display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px;padding:28px 22px 24px;background:#fff;border-radius:22px;border:1.5px solid transparent;color:#241A17;cursor:pointer;font:inherit;transition:transform .25s,box-shadow .25s,border-color .25s}
+.card:hover{transform:translateY(-4px);box-shadow:0 20px 40px -24px rgba(90,10,18,.35)}
+.card[aria-current="true"]{border-color:var(--red)}
+.card img{width:190px;height:190px;max-width:100%;border-radius:50%;filter:drop-shadow(0 10px 16px rgba(90,10,18,.22));transition:transform .6s cubic-bezier(.2,.85,.25,1)}
+.card:hover img{transform:rotate(25deg)}
+.cname{margin:10px 0 0;font-size:24px;line-height:1.15}
+.cdesc{margin:0;font-size:14px;line-height:1.55;color:#5C504B}
+.cfoot{margin-top:auto;padding-top:10px;display:flex;align-items:center;justify-content:space-between;width:100%;font-size:14px}
+.cfoot b{font-weight:600}
+.cgo{color:var(--red);font-weight:600}
+
+.steps{padding:96px 0}
+.stepgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:32px;margin-top:48px}
+.step{display:flex;flex-direction:column;gap:12px}
+.sicon{width:60px;height:60px;border-radius:16px;background:#FBE9E8;color:var(--red);display:grid;place-items:center}
+.sname{margin:6px 0 0;font-size:26px}
+.stxt{margin:0;font-size:16px;line-height:1.6;color:#5C504B}
+
+.band{background:var(--red);color:#fff;padding:72px 0}
+.bandin{display:flex;align-items:center;justify-content:space-between;gap:32px;flex-wrap:wrap}
+.bandt{margin:0;font-size:46px;line-height:1.05;max-width:640px}
+.bandbtn{height:56px;padding:0 28px;border-radius:14px;background:#fff;color:#8C1023;font-weight:600;font-size:16px;display:inline-flex;align-items:center;gap:10px;text-decoration:none}
+.bandbtn:hover{background:#FFF1EF;color:#8C1023}
+
+.foot{background:#3A0810;color:#F3E3E0;padding:64px 0 40px}
+.footgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:32px}
+.fh{margin:0 0 12px;font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:#E9B9B4;font-weight:600}
+.fp{margin:0;font-size:15px;line-height:1.8}
+.foot a{color:#F3E3E0}.foot a:hover{color:#fff}
+.legal{margin-top:48px;padding-top:24px;border-top:1px solid rgba(255,255,255,.14);font-size:13px;color:#D9BDB8}
+
+/* cart drawer */
+.scrim{position:fixed;inset:0;z-index:50;background:rgba(36,26,23,.45);opacity:0;pointer-events:none;transition:opacity .25s}
+.drawer{position:fixed;z-index:51;top:0;right:0;height:100vh;height:100dvh;width:min(420px,100vw);background:#fff;display:flex;flex-direction:column;box-shadow:-20px 0 50px -20px rgba(36,26,23,.4);transform:translateX(105%);transition:transform .32s cubic-bezier(.2,.85,.25,1);visibility:hidden}
+body.cart-open .scrim{opacity:1;pointer-events:auto}
+body.cart-open .drawer{transform:none;visibility:visible}
+body.cart-open{overflow:hidden}
+.dhead{display:flex;align-items:center;justify-content:space-between;padding:22px 24px;border-bottom:1px solid #F0E6E2}
+.dclose{width:44px;height:44px;border-radius:999px;border:1px solid #EADFDB;background:#fff;display:grid;place-items:center;cursor:pointer;color:#241A17}
+.dclose:hover{border-color:var(--red);color:var(--red)}
+.dempty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;padding:24px}
+.dlist{flex:1;overflow-y:auto;padding:8px 24px}
+.ditem{display:flex;gap:14px;align-items:flex-start;padding:16px 0;border-bottom:1px solid #F0E6E2}
+.ditem img{width:72px;height:72px;border-radius:50%;flex:none}
+.qty{display:inline-flex;align-items:center;border:1.5px solid #EADFDB;border-radius:999px}
+.qty button{width:44px;height:40px;border:0;background:transparent;font-weight:600;font-size:18px;color:#241A17;cursor:pointer}
+.qty button:hover{color:var(--red)}
+.qty span{min-width:20px;text-align:center;font-weight:600}
+.dfoot{padding:20px 24px calc(24px + env(safe-area-inset-bottom));border-top:1px solid #F0E6E2;display:flex;flex-direction:column;gap:14px}
+.wabtn{height:54px;border-radius:12px;background:#1E8E4E;color:#fff;display:flex;align-items:center;justify-content:center;gap:10px;font-weight:600;font-size:16px;text-decoration:none}
+.wabtn:hover{background:#177540;color:#fff}
+.dclear{height:44px;border:0;background:transparent;color:#6E625D;font-weight:500;font-size:14px;cursor:pointer;text-decoration:underline}
+.dclear:hover{color:var(--red)}
+[hidden]{display:none !important}
+
+@media (max-width:1100px){.side{width:250px}.title{font-size:56px}.arrows{gap:110px}}
+@media (max-width:900px){
+.nav{padding:16px 20px}.navlogo{height:44px}
+.navlinks .navlink{display:none}
+.wrap{padding:0 20px}
+.hero{height:auto}
+.title{font-size:44px}
+.side{position:static;width:auto;max-width:520px;margin:28px auto 0;padding:0 20px;text-align:center}
+.side.r{align-items:center;text-align:center}
+.chips{justify-content:center}
+.stage{position:relative;left:auto;transform:none;margin:96px auto 0;width:min(820px,100vw);height:calc(min(820px,100vw) / 2)}
+.wheel{width:min(820px,100vw);height:min(820px,100vw)}
+.arrows{gap:90px;top:-70px}
+.deco.hide-sm{display:none}
+.grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+.stepgrid{grid-template-columns:minmax(0,1fr)}
+.footgrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+.h2{font-size:40px}.bandt{font-size:34px}
+}
+@media (max-width:560px){.grid,.footgrid{grid-template-columns:minmax(0,1fr)}.title{font-size:38px}}
+@media (prefers-reduced-motion:reduce){.pizza{animation:none}.pz,.tx,.drawer,.scrim{transition:none}}
+</style>
+</head>
+<body>
+
+<section id="inicio" class="hero" aria-label="Pizza destacada">
+<header class="nav">
+<a href="#inicio"><img class="navlogo" src="images/piezza-horizontal.png" alt="PIEZZA Pizzería, inicio" width="216" height="56"></a>
+<nav class="navlinks" aria-label="Principal">
+<a class="navlink" href="#menu">Menú</a>
+<a class="navlink" href="#como">Cómo pedir</a>
+<a class="navlink" href="#visitanos">Visítanos</a>
+<button class="cartbtn" id="cartBtn" type="button" aria-label="Abrir carrito, 0 artículos" aria-controls="drawer" aria-expanded="false">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h2l2.4 11.2a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.1L21 8H6.2"/><circle cx="9.5" cy="20" r="1.3"/><circle cx="17.5" cy="20" r="1.3"/></svg>
+<span class="badge" id="badge" hidden>0</span>
+</button>
+</nav>
+</header>
+
+<svg class="deco hide-sm" style="left:2.5%;top:190px;width:62px;height:62px" viewBox="0 0 70 70" aria-hidden="true"><circle cx="35" cy="35" r="30" fill="#E23A2E"/><circle cx="35" cy="35" r="24" fill="#F05A45"/><path d="M35 35 L35 13 M35 35 L54 46 M35 35 L16 46" stroke="#F7B59E" stroke-width="3"/><ellipse cx="35" cy="22" rx="3" ry="5" fill="#FBE3B6"/><ellipse cx="45" cy="41" rx="3" ry="5" fill="#FBE3B6" transform="rotate(120 45 41)"/><ellipse cx="25" cy="41" rx="3" ry="5" fill="#FBE3B6" transform="rotate(240 25 41)"/></svg>
+<svg class="deco hide-sm" style="left:33%;top:96px;width:40px;height:40px" viewBox="0 0 46 46" aria-hidden="true"><path d="M23 4 C34 10 38 26 30 38 C26 43 20 43 16 38 C8 26 12 10 23 4 Z" fill="#F4EBDD" stroke="#D9C9AF" stroke-width="1.5"/><path d="M23 8 C24 18 24 28 22 40" stroke="#E1D3BC" stroke-width="1.2" fill="none"/></svg>
+<svg class="deco hide-sm" style="right:16%;top:96px;width:120px;height:60px" viewBox="0 0 120 60" aria-hidden="true"><path d="M8 40 C30 52 70 50 98 22 C102 18 104 14 104 10" stroke="#C81E1E" stroke-width="13" stroke-linecap="round" fill="none"/><path d="M14 38 C34 46 66 44 90 24" stroke="#F06A5A" stroke-width="3" stroke-linecap="round" fill="none" opacity=".7"/><path d="M104 10 C106 4 112 2 116 6" stroke="#3E7D2E" stroke-width="5" stroke-linecap="round" fill="none"/></svg>
+<svg class="deco hide-sm" style="right:9%;top:210px;width:64px;height:44px" viewBox="0 0 64 44" aria-hidden="true"><path d="M4 22 C16 2 46 2 60 22 C46 42 16 42 4 22 Z" fill="#3E8E3A"/><path d="M6 22 C24 20 42 20 58 22" stroke="#8CCB6E" stroke-width="1.6" fill="none"/></svg>
+<svg class="deco hide-sm" style="left:7%;top:600px;width:80px;height:56px" viewBox="0 0 64 44" aria-hidden="true"><path d="M4 22 C16 2 46 2 60 22 C46 42 16 42 4 22 Z" fill="#4C9A3F" transform="rotate(-24 32 22)"/><path d="M8 26 C24 22 40 18 56 14" stroke="#9AD27C" stroke-width="1.6" fill="none"/></svg>
+<svg class="deco hide-sm" style="left:12%;top:520px;width:60px;height:60px" viewBox="0 0 60 60" aria-hidden="true"><circle cx="10" cy="12" r="3" fill="#B5432E"/><circle cx="22" cy="6" r="2.2" fill="#8C3424"/><circle cx="28" cy="20" r="2.6" fill="#B5432E"/><circle cx="14" cy="30" r="2" fill="#8C3424"/><circle cx="34" cy="34" r="2.4" fill="#C7533B"/><circle cx="46" cy="22" r="1.8" fill="#8C3424"/><circle cx="40" cy="48" r="2.2" fill="#B5432E"/></svg>
+<svg class="deco hide-sm" style="right:6%;top:600px;width:150px;height:110px" viewBox="0 0 150 110" aria-hidden="true"><path d="M12 92 C40 98 92 84 120 40 C124 32 126 26 126 20" stroke="#C81E1E" stroke-width="15" stroke-linecap="round" fill="none"/><path d="M20 88 C46 90 86 78 110 44" stroke="#F06A5A" stroke-width="3" stroke-linecap="round" fill="none" opacity=".7"/><path d="M126 20 C128 12 136 8 142 12" stroke="#3E7D2E" stroke-width="6" stroke-linecap="round" fill="none"/></svg>
+<svg class="deco hide-sm" style="right:15%;top:690px;width:58px;height:40px" viewBox="0 0 64 44" aria-hidden="true"><path d="M4 22 C16 2 46 2 60 22 C46 42 16 42 4 22 Z" fill="#3E8E3A" transform="rotate(30 32 22)"/></svg>
+<svg class="deco hide-sm" style="right:22%;top:540px;width:56px;height:56px" viewBox="0 0 60 60" aria-hidden="true"><circle cx="12" cy="10" r="2.4" fill="#B5432E"/><circle cx="30" cy="16" r="3" fill="#8C3424"/><circle cx="20" cy="32" r="2" fill="#C7533B"/><circle cx="42" cy="30" r="2.6" fill="#B5432E"/><circle cx="36" cy="48" r="2" fill="#8C3424"/></svg>
+
+<div class="hero-head">
+<div class="tx" data-tx>
+<p class="kicker">Descubre el sabor de</p>
+<h1 class="title disp" id="pzName">Pepperoni Clásica</h1>
+</div>
+<div class="sizes" role="group" aria-label="Tamaño" id="sizes"></div>
+<p class="sizecap" id="sizeCap">Mediana · 12 pulgadas</p>
+</div>
+
+<div class="side l">
+<div class="tx" data-tx><p class="desc" id="pzDesc"></p></div>
+<button class="ghostbtn" id="extrasBtn" type="button" aria-expanded="false" aria-controls="chips">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+Agregar ingredientes
+</button>
+<div class="chips" id="chips" hidden></div>
+</div>
+
+<div class="side r">
+<div class="tx" data-tx><p class="promo"><span id="pzPromo"></span><br><b>Código <span id="pzCode"></span></b></p></div>
+<p class="price disp" id="price" aria-live="polite">RD$ 695</p>
+<button class="addbtn" id="addBtn" type="button">AGREGAR AL CARRITO</button>
+</div>
+
+<div class="stage">
+<div class="arrows">
+<button class="arrow" id="prevBtn" type="button" aria-label="Pizza anterior"><svg width="60" height="34" viewBox="0 0 60 34" fill="none" aria-hidden="true"><path d="M56 26 C42 10 24 8 8 16" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><path d="M16 6 L6 17 L20 22" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+<button class="arrow nx" id="nextBtn" type="button" aria-label="Pizza siguiente"><svg width="60" height="34" viewBox="0 0 60 34" fill="none" aria-hidden="true"><path d="M4 16 C18 8 36 10 52 26" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><path d="M54 12 L54 28 L40 26" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+</div>
+<p class="counter" id="counter" aria-live="polite">01 / 04</p>
+<div class="wheel">
+<div class="pz" id="pz">
+<svg class="ring" viewBox="0 0 820 820" aria-hidden="true">
+<defs>
+<filter id="brush" x="-10%" y="-10%" width="120%" height="120%"><feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="3" seed="7"/><feDisplacementMap in="SourceGraphic" scale="22"/></filter>
+<filter id="glow" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="22"/></filter>
+</defs>
+<circle cx="410" cy="410" r="372" fill="none" stroke="#B3172E" stroke-opacity=".28" stroke-width="40" filter="url(#glow)"/>
+<circle cx="410" cy="410" r="384" fill="none" stroke="#B3172E" stroke-width="34" filter="url(#brush)"/>
+<circle cx="410" cy="410" r="398" fill="none" stroke="#B3172E" stroke-width="6" stroke-dasharray="40 26 120 30 70 22" filter="url(#brush)" opacity=".85"/>
+</svg>
+<img class="pizza" id="pzImg" src="images/pepperoni.webp" alt="" width="900" height="900" fetchpriority="high">
+</div>
+</div>
+</div>
+</section>
+
+<section id="menu" class="menu" aria-labelledby="menu-h">
+<div class="wrap">
+<p class="eyebrow">El menú</p>
+<h2 id="menu-h" class="h2 disp">Escoge tu pieza</h2>
+<p class="lead">Cuatro clásicas de la casa, horneadas al momento. Toca una para verla en grande arriba.</p>
+<div class="grid" id="cards"></div>
+</div>
+</section>
+
+<section id="como" class="steps" aria-labelledby="como-h">
+<div class="wrap">
+<p class="eyebrow">Cómo pedir</p>
+<h2 id="como-h" class="h2 disp">De nuestro horno a tu mesa</h2>
+<div class="stepgrid">
+<div class="step"><div class="sicon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 12 L12 3 M12 12 L19.5 16.5"/><circle cx="9" cy="15" r="1"/><circle cx="15" cy="8" r="1"/></svg></div><h3 class="sname disp">1. Escoge tu pieza</h3><p class="stxt">Elige pizza, tamaño y los ingredientes extra que quieras.</p></div>
+<div class="step"><div class="sicon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 20h18M5 20V10a7 7 0 0 1 14 0v10"/><path d="M9 16c1-1.5 2-1.5 3 0s2 1.5 3 0"/></svg></div><h3 class="sname disp">2. La horneamos al momento</h3><p class="stxt">Tu pizza entra al horno cuando haces el pedido, no antes.</p></div>
+<div class="step"><div class="sicon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="17" r="3"/><circle cx="18" cy="17" r="3"/><path d="M9 17h6M14 7h3l3 6v4M6 14V9h8v8"/></svg></div><h3 class="sname disp">3. Te llega caliente</h3><p class="stxt">Pasa a buscarla o recíbela en tu casa. Tú decides.</p></div>
+</div>
+</div>
+</section>
+
+<section class="band" aria-label="Pedir ahora">
+<div class="wrap bandin">
+<h2 class="bandt disp">¿Antojo de pizza? Pide la tuya ahora.</h2>
+<a class="bandbtn" href="#inicio">Hacer mi pedido <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+</div>
+</section>
+
+<footer id="visitanos" class="foot">
+<div class="wrap">
+<div class="footgrid">
+<div><img src="images/piezza-logo-white.png" alt="PIEZZA Pizzería" width="170" height="127" style="display:block;height:auto"><p class="fp" style="margin-top:16px">Pizza hecha al momento, una pieza a la vez.</p></div>
+<div><p class="fh">Visítanos</p><p class="fp">[Dirección del local]<br>Santo Domingo, R.D.</p></div>
+<div><p class="fh">Horario</p><p class="fp">[Lunes a jueves, horario]<br>[Viernes a domingo, horario]</p></div>
+<div><p class="fh">Contacto</p><p class="fp">[Teléfono / WhatsApp]<br>[@usuario de Instagram]</p></div>
+</div>
+<p class="legal">© 2026 PIEZZA Pizzería. Todos los derechos reservados.</p>
+</div>
+</footer>
+
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="drawer-h">
+<div class="dhead">
+<h2 class="disp" id="drawer-h" style="margin:0;font-size:30px">Tu carrito</h2>
+<button class="dclose" id="closeBtn" type="button" aria-label="Cerrar carrito"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+</div>
+<div class="dempty" id="dEmpty">
+<svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#C9B9B3" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h2l2.4 11.2a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.1L21 8H6.2"/><circle cx="9.5" cy="20" r="1.3"/><circle cx="17.5" cy="20" r="1.3"/></svg>
+<p style="margin:0;font-size:17px;font-weight:600">Tu carrito está vacío</p>
+<p style="margin:0;font-size:14px;color:#6E625D">Escoge una pizza y dale a "Agregar al carrito".</p>
+<button class="addbtn" type="button" data-close>VER PIZZAS</button>
+</div>
+<div class="dlist" id="dList" hidden></div>
+<div class="dfoot" id="dFoot" hidden>
+<div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:15px;color:#5C504B">Total</span><span class="disp" style="font-size:32px" id="dTotal">RD$ 0</span></div>
+<a class="wabtn" id="waBtn" href="#" target="_blank" rel="noopener">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.7.8-.8 1-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.3-.4.7-1.3a.5.5 0 0 0 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.1 5.1 0 0 0 1.1 2.7 11.6 11.6 0 0 0 4.5 4c1.7.7 2.3.8 3.1.6a2.7 2.7 0 0 0 1.8-1.2 2.2 2.2 0 0 0 .1-1.2c0-.1-.2-.2-.4-.3z"/></svg>
+Pedir por WhatsApp
+</a>
+<button class="dclear" id="clearBtn" type="button">Vaciar carrito</button>
+</div>
+</aside>
+
+<script>
+(function(){
+  // Número de WhatsApp del negocio (solo dígitos, con código de país: 1809XXXXXXX). Vacío = el cliente escoge a quién enviarlo.
+  var WHATSAPP = '';
+
+  var PZ = [
+    {name:'Pepperoni Clásica', img:'images/pepperoni.webp', alt:'Pizza de pepperoni vista desde arriba',
+     desc:'Pepperoni curado, mozzarella fresca y salsa de tomate de la casa sobre masa de fermentación lenta.',
+     short:'Pepperoni, mozzarella y salsa de la casa.', promo:'Ahorra RD$100 en tu primera orden', code:'PIEZZA100', prices:[395,695,995]},
+    {name:'La Suprema', img:'images/suprema.webp', alt:'Pizza suprema con aceitunas, pimiento y champiñones',
+     desc:'Longaniza, pimiento verde, aceitunas negras, champiñones y mozzarella gratinada.',
+     short:'Longaniza, pimiento, aceitunas y champiñones.', promo:'Martes de 2x1 en tamaño mediano', code:'MARTES2X1', prices:[450,795,1095]},
+    {name:'La Criolla', img:'images/criolla.webp', alt:'Pizza con salami, cebolla roja y maíz',
+     desc:'Salami dominicano, cebolla roja, maíz dulce, jamón y un toque de queso de hoja.',
+     short:'Salami, cebolla roja, maíz y queso de hoja.', promo:'Lleva una Criolla familiar y el refresco va por la casa', code:'CRIOLLA', prices:[450,795,1095]},
+    {name:'Pollo a la Brasa', img:'images/pollo.webp', alt:'Pizza de pollo con tomate',
+     desc:'Pollo marinado en naranja agria, tomate, cebolla y orégano dominicano.',
+     short:'Pollo en naranja agria, tomate y orégano.', promo:'RD$80 de descuento pidiendo por la web', code:'WEB80', prices:[425,750,1050]}
+  ];
+  var SIZES = [{s:'P',label:'Personal',cap:'Personal · 8 pulgadas'},{s:'M',label:'Mediana',cap:'Mediana · 12 pulgadas'},{s:'F',label:'Familiar',cap:'Familiar · 16 pulgadas'}];
+  var EXTRAS = [{id:'queso',name:'Extra queso',price:75},{id:'champ',name:'Champiñones',price:60},{id:'jala',name:'Jalapeño',price:50},{id:'toci',name:'Tocineta',price:90}];
+
+  var st = {i:0, size:1, ex:{}, cart:[], busy:false};
+  try { var saved = JSON.parse(localStorage.getItem('piezza-cart')||'[]'); if (Array.isArray(saved)) st.cart = saved; } catch(e){}
+
+  var $ = function(id){ return document.getElementById(id); };
+  var fmt = function(n){ return 'RD$ ' + n.toLocaleString('es-DO'); };
+  var esc = function(s){ return String(s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); };
+  var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // preload all pizzas so swaps never show a blank frame
+  PZ.forEach(function(p){ var im = new Image(); im.src = p.img; });
+
+  function extrasSum(){ return EXTRAS.reduce(function(a,e){ return a + (st.ex[e.id] ? e.price : 0); }, 0); }
+  function unitPrice(){ return PZ[st.i].prices[st.size] + extrasSum(); }
+
+  function renderPizzaText(){
+    var p = PZ[st.i];
+    $('pzName').textContent = p.name;
+    $('pzDesc').textContent = p.desc;
+    $('pzPromo').textContent = p.promo;
+    $('pzCode').textContent = p.code;
+    $('pzImg').src = p.img; $('pzImg').alt = p.alt;
+    $('counter').textContent = String(st.i+1).padStart(2,'0') + ' / ' + String(PZ.length).padStart(2,'0');
+    document.querySelectorAll('.card').forEach(function(c,j){ c.setAttribute('aria-current', j===st.i ? 'true' : 'false'); });
+  }
+  function renderPrice(){ $('price').textContent = fmt(unitPrice()); }
+  function renderSizes(){
+    $('sizes').innerHTML = SIZES.map(function(z,k){
+      return '<button class="size" type="button" data-size="'+k+'" aria-label="'+z.label+'" aria-pressed="'+(k===st.size)+'">'+z.s+'</button>';
+    }).join('');
+    $('sizeCap').textContent = SIZES[st.size].cap;
+  }
+  function renderChips(){
+    $('chips').innerHTML = EXTRAS.map(function(e){
+      return '<button class="chip" type="button" data-ex="'+e.id+'" aria-pressed="'+(!!st.ex[e.id])+'">'+e.name+' <span>+RD$ '+e.price+'</span></button>';
+    }).join('');
+  }
+  function renderCards(){
+    $('cards').innerHTML = PZ.map(function(p,j){
+      return '<button class="card" type="button" data-pick="'+j+'" aria-current="'+(j===st.i)+'">'+
+        '<img src="'+p.img+'" alt="'+esc(p.alt)+'" width="190" height="190" loading="lazy">'+
+        '<h3 class="cname disp">'+esc(p.name)+'</h3><p class="cdesc">'+esc(p.short)+'</p>'+
+        '<span class="cfoot"><span>Desde <b>'+fmt(p.prices[0])+'</b></span><span class="cgo">Ver →</span></span></button>';
+    }).join('');
+  }
+
+  function goTo(target, dir){
+    if (st.busy || target === st.i) return;
+    var tx = document.querySelectorAll('[data-tx]'), pz = $('pz'), side = dir > 0 ? 'r' : 'l';
+    if (reduce){ st.i = target; renderPizzaText(); renderPrice(); return; }
+    st.busy = true;
+    tx.forEach(function(el){ el.classList.add('out'); });
+    pz.classList.remove('l','r'); pz.classList.add('out', side);
+    setTimeout(function(){
+      st.i = target; renderPizzaText(); renderPrice();
+      tx.forEach(function(el){ el.classList.remove('out'); el.classList.add('pre'); });
+      pz.classList.remove('out'); pz.classList.add('pre');
+      void pz.offsetWidth; // fuerza el punto de partida antes de entrar
+      tx.forEach(function(el){ el.classList.remove('pre'); });
+      pz.classList.remove('pre');
+      setTimeout(function(){ pz.classList.remove('l','r'); st.busy = false; }, 560);
+    }, 430);
+  }
+  function step(d){ goTo((st.i + d + PZ.length) % PZ.length, d); }
+
+  // ---- carrito ----
+  function save(){ try { localStorage.setItem('piezza-cart', JSON.stringify(st.cart)); } catch(e){} }
+  function renderCart(){
+    var count = st.cart.reduce(function(a,c){ return a + c.qty; }, 0);
+    var total = st.cart.reduce(function(a,c){ return a + c.qty*c.unit; }, 0);
+    var b = $('badge'); b.textContent = count; b.hidden = count === 0;
+    $('cartBtn').setAttribute('aria-label', 'Abrir carrito, ' + count + (count === 1 ? ' artículo' : ' artículos'));
+    var empty = st.cart.length === 0;
+    $('dEmpty').hidden = !empty; $('dList').hidden = empty; $('dFoot').hidden = empty;
+    $('dList').innerHTML = st.cart.map(function(c){
+      return '<div class="ditem"><img src="'+c.img+'" alt=""><div style="flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:4px">'+
+        '<p style="margin:0;font-weight:600;font-size:15px">'+esc(c.name)+'</p><p style="margin:0;font-size:13px;color:#6E625D">'+esc(c.detail)+'</p>'+
+        '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:6px">'+
+        '<div class="qty"><button type="button" data-q="-1" data-key="'+c.key+'" aria-label="Quitar uno">−</button><span>'+c.qty+'</span>'+
+        '<button type="button" data-q="1" data-key="'+c.key+'" aria-label="Agregar uno">+</button></div>'+
+        '<span style="font-weight:600">'+fmt(c.unit*c.qty)+'</span></div></div></div>';
+    }).join('');
+    $('dTotal').textContent = fmt(total);
+    var text = 'Hola PIEZZA, quiero hacer este pedido:\n' + st.cart.map(function(c){
+      return '• ' + c.qty + ' x ' + c.name + ' (' + c.detail + ') — ' + fmt(c.unit*c.qty);
+    }).join('\n') + '\nTotal: ' + fmt(total);
+    $('waBtn').href = 'https://wa.me/' + WHATSAPP + '?text=' + encodeURIComponent(text);
+  }
+  function addToCart(){
+    var ids = EXTRAS.filter(function(e){ return st.ex[e.id]; });
+    var key = st.i + '-' + st.size + '-' + ids.map(function(e){ return e.id; }).join('.');
+    var found = st.cart.filter(function(c){ return c.key === key; })[0];
+    if (found) found.qty++;
+    else st.cart.push({key:key, name:PZ[st.i].name, img:PZ[st.i].img, qty:1, unit:unitPrice(),
+      detail: SIZES[st.size].label + (ids.length ? ' · ' + ids.map(function(e){ return e.name; }).join(', ') : '')});
+    save(); renderCart();
+    var btn = $('addBtn'); btn.textContent = '✓ ¡AGREGADA!';
+    clearTimeout(addToCart.t); addToCart.t = setTimeout(function(){ btn.textContent = 'AGREGAR AL CARRITO'; }, 1400);
+    var badge = $('badge'); badge.classList.remove('bump'); void badge.offsetWidth; badge.classList.add('bump');
+  }
+  var lastFocus = null;
+  function openCart(){ lastFocus = document.activeElement; document.body.classList.add('cart-open'); $('cartBtn').setAttribute('aria-expanded','true'); setTimeout(function(){ $('closeBtn').focus(); }, 50); }
+  function closeCart(){ document.body.classList.remove('cart-open'); $('cartBtn').setAttribute('aria-expanded','false'); if (lastFocus) lastFocus.focus(); }
+
+  // ---- eventos ----
+  $('prevBtn').addEventListener('click', function(){ step(-1); });
+  $('nextBtn').addEventListener('click', function(){ step(1); });
+  $('sizes').addEventListener('click', function(e){ var b = e.target.closest('[data-size]'); if (!b) return; st.size = +b.dataset.size; renderSizes(); renderPrice(); });
+  $('extrasBtn').addEventListener('click', function(){ var c = $('chips'); c.hidden = !c.hidden; this.setAttribute('aria-expanded', String(!c.hidden)); });
+  $('chips').addEventListener('click', function(e){ var b = e.target.closest('[data-ex]'); if (!b) return; st.ex[b.dataset.ex] = !st.ex[b.dataset.ex]; renderChips(); renderPrice(); });
+  $('cards').addEventListener('click', function(e){
+    var b = e.target.closest('[data-pick]'); if (!b) return; var j = +b.dataset.pick;
+    document.getElementById('inicio').scrollIntoView({behavior: reduce ? 'auto' : 'smooth'});
+    setTimeout(function(){ goTo(j, j > st.i ? 1 : -1); }, reduce ? 0 : 450);
+  });
+  $('addBtn').addEventListener('click', addToCart);
+  $('cartBtn').addEventListener('click', openCart);
+  $('closeBtn').addEventListener('click', closeCart);
+  $('scrim').addEventListener('click', closeCart);
+  document.querySelector('[data-close]').addEventListener('click', closeCart);
+  document.addEventListener('keydown', function(e){ if (e.key === 'Escape' && document.body.classList.contains('cart-open')) closeCart(); });
+  $('dList').addEventListener('click', function(e){
+    var b = e.target.closest('[data-q]'); if (!b) return;
+    st.cart = st.cart.map(function(c){ if (c.key === b.dataset.key) c.qty += +b.dataset.q; return c; }).filter(function(c){ return c.qty > 0; });
+    save(); renderCart();
+  });
+  $('clearBtn').addEventListener('click', function(){ st.cart = []; save(); renderCart(); });
+  // deslizar sobre la pizza en el celular
+  var sx = null;
+  $('pz').addEventListener('touchstart', function(e){ sx = e.touches[0].clientX; }, {passive:true});
+  $('pz').addEventListener('touchend', function(e){ if (sx === null) return; var dx = e.changedTouches[0].clientX - sx; if (Math.abs(dx) > 40) step(dx < 0 ? 1 : -1); sx = null; });
+
+  renderSizes(); renderChips(); renderCards(); renderPizzaText(); renderPrice(); renderCart();
+})();
+</script>
+</body>
+</html>
