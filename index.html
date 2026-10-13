@@ -173,6 +173,25 @@ body.cart-open{overflow:hidden}
 .h2{font-size:40px}.bandt{font-size:34px}
 }
 @media (max-width:560px){.grid,.footgrid{grid-template-columns:minmax(0,1fr)}.title{font-size:38px}}
+/* Phone menu + hero order: name, sizes, whole pizza, then description and price */
+.menubtn{display:none}
+@media (max-width:900px){
+.menubtn{display:grid;place-items:center;width:48px;height:48px;border-radius:999px;border:1px solid #EADFDB;background:#fff;color:#241A17;cursor:pointer}
+.menubtn:hover{border-color:var(--red);color:var(--red)}
+.navlinks{gap:10px}
+.mnav{position:absolute;left:16px;right:16px;top:calc(100% - 4px);z-index:20;background:#fff;border:1px solid #EADFDB;border-radius:18px;box-shadow:0 18px 40px rgba(90,10,18,.16);padding:8px;display:flex;flex-direction:column}
+.mnav a{display:flex;align-items:center;min-height:52px;padding:0 16px;border-radius:12px;color:#241A17;text-decoration:none;font-weight:500;font-size:17px}
+.mnav a:hover{background:#FBF1EE;color:var(--red)}
+.hero{display:flex;flex-direction:column;padding-bottom:40px}
+.nav{order:0;position:relative}
+.hero-head{order:1}
+.stage{order:2;width:min(440px,calc(100vw - 32px));height:auto;margin:84px auto 0}
+.stage .wheel{position:relative;left:auto;top:auto;transform:none;width:100%;height:auto;aspect-ratio:1/1;overflow:hidden;border-radius:50%}
+.side.l{order:3}
+.side.r{order:4;margin-top:18px}
+.addbtn,.ghostbtn{width:100%;max-width:360px;min-height:52px;justify-content:center}
+.size{width:52px;height:52px}
+}
 @media (prefers-reduced-motion:reduce){.pizza{animation:none}.pz,.tx,.drawer,.scrim{transition:none}}
 </style>
 </head>
@@ -189,6 +208,14 @@ body.cart-open{overflow:hidden}
 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h2l2.4 11.2a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.1L21 8H6.2"/><circle cx="9.5" cy="20" r="1.3"/><circle cx="17.5" cy="20" r="1.3"/></svg>
 <span class="badge" id="badge" hidden>0</span>
 </button>
+<button class="menubtn" id="menuBtn" type="button" aria-label="Abrir menú" aria-expanded="false" aria-controls="mnav">
+<svg id="menuIco" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+</button>
+</nav>
+<nav class="mnav" id="mnav" aria-label="Menú del celular" hidden>
+<a href="#menu">Menú</a>
+<a href="#como">Cómo pedir</a>
+<a href="#visitanos">Visítanos</a>
 </nav>
 </header>
 
@@ -465,6 +492,20 @@ Pedir por WhatsApp
   $('pz').addEventListener('touchend', function(e){ if (sx === null) return; var dx = e.changedTouches[0].clientX - sx; if (Math.abs(dx) > 40) step(dx < 0 ? 1 : -1); sx = null; });
 
   renderSizes(); renderChips(); renderCards(); renderPizzaText(); renderPrice(); renderCart();
+})();
+</script>
+<script>
+(function(){
+  var b=document.getElementById('menuBtn'), m=document.getElementById('mnav'), ico=document.getElementById('menuIco');
+  if(!b||!m) return;
+  function set(open){ m.hidden=!open; b.setAttribute('aria-expanded',open?'true':'false'); b.setAttribute('aria-label',open?'Cerrar menú':'Abrir menú');
+    ico.innerHTML=open?'<path d="M6 6l12 12M18 6L6 18"/>':'<path d="M4 7h16M4 12h16M4 17h16"/>'; }
+  b.addEventListener('click',function(e){ e.stopPropagation(); set(m.hidden); });
+  m.addEventListener('click',function(e){ if(e.target.closest('a')) set(false); });
+  document.addEventListener('click',function(e){ if(!m.hidden && !m.contains(e.target)) set(false); });
+  document.addEventListener('keydown',function(e){ if(e.key==='Escape' && !m.hidden){ set(false); b.focus(); } });
+  var cart=document.getElementById('cartBtn'); if(cart) cart.addEventListener('click',function(){ set(false); });
+  window.addEventListener('resize',function(){ if(window.innerWidth>900) set(false); });
 })();
 </script>
 </body>
