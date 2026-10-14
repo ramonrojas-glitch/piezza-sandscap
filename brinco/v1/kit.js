@@ -1,4 +1,4 @@
-/*! Brinco Kit v1 · Sandscap · 2026-10-14T18:02Z */
+/*! Brinco Kit v1 · Sandscap · 2026-10-14T18:09Z */
 (function () {
 'use strict';
 
@@ -225,6 +225,14 @@ function applyConfig(c) {
   r.setProperty('--bk-on-brand', onBrand(c));
   r.setProperty('--bk-brand-text', brandText(c));
   r.setProperty('--bk-surface-ink', surfaceInk(c));
+  // Sitio de tema oscuro (texto claro): las páginas que pinta el kit (/pedido/, /panel/, legales) van en claro,
+  // con tinta oscura y fondo crema, para que tarjetas y textos se lean. Forzable con "tema": "oscuro" | "claro".
+  const dark = c.tema === 'oscuro' || (c.tema !== 'claro' && surfaceInk(c) !== c.colorTexto);
+  document.documentElement.classList.toggle('bk-dark-site', !!dark);
+  if (dark && document.querySelector('[data-brinco="pedido"],[data-brinco="panel"],[data-brinco="legal"]')) {
+    r.setProperty('--bk-ink', surfaceInk(c));
+    r.setProperty('--bk-bg', c.colorFondoClaro || '#FBF8F3');
+  }
   if (c.fuenteTitulos) r.setProperty('--bk-font-title', `"${c.fuenteTitulos}", Georgia, serif`);
   if (c.fuenteTexto) r.setProperty('--bk-font-body', `"${c.fuenteTexto}", system-ui, sans-serif`);
   if (c.googleFonts && !document.querySelector('link[data-bk-fonts]')) {
