@@ -113,6 +113,10 @@
       });
     }
   };
+  // Navegador dentro de Instagram/Facebook/TikTok: Apple no deja usar Face ID ahí
+  const INAPP = /Instagram|FBAN|FBAV|FB_IAB|TikTok|musical_ly|BytedanceWebview|Line\//i.test(navigator.userAgent || '');
+  const IOS = /iPhone|iPad|iPod/i.test(navigator.userAgent || '');
+  function safariURL() { return 'x-safari-' + location.origin + location.pathname; }
   // Ícono: rostro (Face ID / biometría) o huella (Android)
   function pkIcon(size) {
     size = size || 22;
@@ -247,7 +251,7 @@
     const card = me && me.cards && me.cards.find((c) => c.main) || (me && me.cards && me.cards[0]);
     const t = totals();
     show('checkout', `
-      <button class="brinco-btn" type="button" id="bPayBtn">Pagar con <span class="bw">brinco</span>${card ? `<span class="card">· ${brandName(card.brand)} •••• ${card.last4}</span>` : ''}</button>
+      <button class="brinco-btn${card ? ' has-card' : ''}" type="button" id="bPayBtn"><span class="bl">Pagar con <span class="bw">brinco</span></span>${card ? `<span class="bc">${brandName(card.brand)} •••• ${card.last4}</span>` : ''}</button>
       <div class="co-or">o paga con tarjeta</div>
       <div class="co-sec"><h3>¿Cómo lo quieres?</h3>
         <div class="seg" role="group" aria-label="Entrega">
@@ -670,6 +674,7 @@
         ${cards.map((c) => `<button type="button" class="opt" role="radio" data-card="${c.id}" aria-checked="${S.bCard === c.id}"><span class="dot"></span>${BRAND_IMG[c.brand] ? `<img src="${BRAND_IMG[c.brand]}" alt="">` : ''}<span class="tx"><b>${brandName(c.brand)} •••• ${c.last4}</b><span>Vence ${esc(c.exp)}${c.main ? ' · principal' : ''}</span></span></button>`).join('')}
         <button class="linkbtn" type="button" id="bAddCard" style="align-self:flex-start;padding:6px 0">+ Agregar otra tarjeta</button>
       </div>
+      ${!pk ? '<div id="pkSlot"></div>' : ''}
       ${sumHTML(mode)}
       <button class="pay blue" type="button" id="bConfirm">${pk ? pkIcon(20) : ''}Confirmar y pagar ${fmt(totals(mode).total)}</button>
       ${testNote}
@@ -677,6 +682,30 @@
     $$('[data-addr]', body).forEach((b) => b.addEventListener('click', () => { S.bAddr = b.dataset.addr === 'pickup' ? 'pickup' : +b.dataset.addr; VIEWS.bSummary({ replace: true }); }));
     $$('[data-card]', body).forEach((b) => b.addEventListener('click', () => { S.bCard = +b.dataset.card; VIEWS.bSummary({ replace: true }); }));
     $('#bAddCard', body).addEventListener('click', () => VIEWS.bCard());
+    // Sin Face ID en este equipo: ofrecer activarlo aquí mismo (o abrir en Safari si está dentro de Instagram)
+    const slot = $('#pkSlot', body);
+    if (slot) {
+      if (INAPP && IOS) {
+        slot.innerHTML = `<a class="pk-banner" href="${safariURL()}"><span class="pk-ico sm">${pkIcon(22)}</span><span class="tx"><b>Paga con Face ID</b><span>Abre PIEZZA en Safari para usar tu rostro</span></span><span class="go">Abrir</span></a>`;
+      } else {
+        PK.available().then((ok) => {
+          if (!ok || S.view !== 'bSummary' || !document.body.contains(slot)) return;
+          slot.innerHTML = `<button type="button" class="pk-banner" id="pkAct"><span class="pk-ico sm">${pkIcon(22)}</span><span class="tx"><b>${PK.t('on')}</b><span>Paga con ${PK.kind() === 'faceid' ? 'una mirada' : 'un toque'}, sin códigos</span></span><span class="go">Activar</span></button>`;
+          $('#pkAct', slot).addEventListener('click', (ev) => {
+            ev.currentTarget.disabled = true;
+            PK.create(me.phone, me.name).then(() => {
+              track('passkey_activada', { tipo: PK.kind(), desde: 'resumen' });
+              toast(PK.t('ok'));
+              VIEWS.bSummary({ replace: true });
+            }, (err) => {
+              track('passkey_fallo', { paso: 'activar', error: (err && err.name) || 'error' });
+              toast('No se activó, puedes hacerlo luego');
+              ev.currentTarget && (ev.currentTarget.disabled = false);
+            });
+          });
+        });
+      }
+    }
     $('#bOut', body).addEventListener('click', () => { B.logout(); S.bAddr = S.bCard = null; VIEWS.checkout({ replace: true }); });
     let paying = false;
     $('#bConfirm', body).addEventListener('click', (e) => {

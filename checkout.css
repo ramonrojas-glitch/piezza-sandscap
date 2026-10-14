@@ -29,7 +29,15 @@
 .brinco-btn{width:100%;min-height:56px;border:0;border-radius:14px;background:#1F4FFF;color:#fff;font:600 16px Poppins,system-ui,sans-serif;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;box-shadow:0 10px 24px -12px rgba(31,79,255,.7);transition:transform .15s,background .2s}
 .brinco-btn:hover{background:#1840D6;transform:translateY(-1px)}
 .brinco-btn .bw{font-weight:800;font-size:19px;letter-spacing:-.02em}
-.brinco-btn .card{font-weight:500;opacity:.92;font-size:14px}
+.brinco-btn .bl{display:inline-flex;align-items:baseline;gap:7px}
+.brinco-btn.has-card{flex-direction:column;gap:1px;min-height:62px;padding:8px 16px}
+.brinco-btn .bc{font:500 13px Poppins,system-ui,sans-serif;opacity:.85;letter-spacing:.01em}
+.pk-banner{display:flex;align-items:center;gap:12px;width:100%;margin:2px 0 4px;padding:12px 14px;border-radius:14px;background:#F2F5FF;border:1.5px solid #DCE4FF;color:#1F3A9E;text-decoration:none;text-align:left;font:inherit;cursor:pointer}
+.pk-banner .tx{display:flex;flex-direction:column;flex:1;min-width:0;font-size:13px;line-height:1.35}
+.pk-banner .tx b{font-size:15px;color:#1F4FFF}
+.pk-banner .go{flex:none;background:#1F4FFF;color:#fff;border-radius:999px;padding:7px 14px;font-weight:600;font-size:13px}
+.pk-banner:disabled{opacity:.6}
+.pk-ico.sm{width:42px;height:42px;border-radius:12px}
 .co-or{display:flex;align-items:center;gap:12px;color:#8A7D78;font-size:13px}
 .co-or::before,.co-or::after{content:"";flex:1;height:1px;background:#EADFDB}
 
