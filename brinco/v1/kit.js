@@ -1,4 +1,4 @@
-/*! Brinco Kit v1 · Sandscap · 2026-10-14T17:34Z */
+/*! Brinco Kit v1 · Sandscap · 2026-10-14T17:41Z */
 (function () {
 'use strict';
 
@@ -428,7 +428,7 @@ function fillVaultFooters(root) {
 }
 // Marcadores que el sitio agrega después (carritos que se redibujan con innerHTML)
 function watchVaultFooters() {
-  if (!window.MutationObserver) return;
+  if (!window.MutationObserver || !document.body) return;
   let pend = false;
   new MutationObserver(() => {
     if (pend) return; pend = true;
@@ -1873,6 +1873,7 @@ function bindCheckoutButtons() {
   });
 }
 function boot() {
+  if (SCRIPT && SCRIPT.getAttribute('data-link')) return;   // página de link corto: solo redirige (módulo links)
   bindCheckoutButtons();
   loadConfig().then((cfg) => {
     Brinco.config = deepMerge(DEFAULTS, cfg || {});
