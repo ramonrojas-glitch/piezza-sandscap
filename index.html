@@ -195,6 +195,13 @@ body.cart-open{overflow:hidden}
 @media (prefers-reduced-motion:reduce){.pizza{animation:none}.pz,.tx,.drawer,.scrim{transition:none}}
 </style>
 <script src="/track.js"></script>
+<link rel="stylesheet" href="/checkout.css">
+<style>
+.paysafe{margin-top:44px}
+.paybadges{display:flex;justify-content:center;flex-wrap:wrap;gap:12px}
+.paybadges span{width:96px;height:64px;background:#fff;border-radius:12px;display:grid;place-items:center;padding:8px}
+.paybadges img{max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain}
+</style>
 </head>
 <body>
 
@@ -313,6 +320,16 @@ Agregar ingredientes
 <div><p class="fh">Horario</p><p class="fp">[Lunes a jueves, horario]<br>[Viernes a domingo, horario]</p></div>
 <div><p class="fh">Contacto</p><p class="fp">[Teléfono / WhatsApp]<br>[@usuario de Instagram]</p></div>
 </div>
+<div class="paysafe">
+<p class="fh" style="text-align:center;margin:0 0 14px">Pagos seguros con</p>
+<div class="paybadges">
+<span><img src="images/pagos/visa.webp" alt="Visa" width="300" height="169"></span>
+<span><img src="images/pagos/mastercard.webp" alt="Mastercard" width="300" height="300"></span>
+<span><img src="images/pagos/visa-secure.webp" alt="Visa Secure" width="198" height="198"></span>
+<span><img src="images/pagos/mastercard-id-check.webp" alt="Mastercard ID Check" width="299" height="300"></span>
+</div>
+<p style="text-align:center;margin:12px 0 0;font-size:13px"><a href="/seguridad/">Políticas de seguridad</a> · <a href="/privacidad/">Privacidad</a> · <a href="/terminos/">Términos y entregas</a></p>
+</div>
 <p class="legal">© 2026 PIEZZA Pizzería. Todos los derechos reservados.</p>
 </div>
 </footer>
@@ -332,19 +349,16 @@ Agregar ingredientes
 <div class="dlist" id="dList" hidden></div>
 <div class="dfoot" id="dFoot" hidden>
 <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:15px;color:#5C504B">Total</span><span class="disp" style="font-size:32px" id="dTotal">RD$ 0</span></div>
-<a class="wabtn" id="waBtn" href="#" target="_blank" rel="noopener">
-<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.7.8-.8 1-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.3-.4.7-1.3a.5.5 0 0 0 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.1 5.1 0 0 0 1.1 2.7 11.6 11.6 0 0 0 4.5 4c1.7.7 2.3.8 3.1.6a2.7 2.7 0 0 0 1.8-1.2 2.2 2.2 0 0 0 .1-1.2c0-.1-.2-.2-.4-.3z"/></svg>
-Pedir por WhatsApp
-</a>
+<button class="wabtn" id="goCheckout" type="button" style="background:var(--red);border:0;cursor:pointer;font-family:inherit">
+Finalizar pedido
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+</button>
 <button class="dclear" id="clearBtn" type="button">Vaciar carrito</button>
 </div>
 </aside>
 
 <script>
 (function(){
-  // Número de WhatsApp del negocio (solo dígitos, con código de país: 1809XXXXXXX). Vacío = el cliente escoge a quién enviarlo.
-  var WHATSAPP = '';
-
   var PZ = [
     {name:'Pepperoni Clásica', img:'images/pepperoni.webp', alt:'Pizza de pepperoni vista desde arriba',
      desc:'Pepperoni curado, mozzarella fresca y salsa de tomate de la casa sobre masa de fermentación lenta.',
@@ -443,11 +457,15 @@ Pedir por WhatsApp
         '<span style="font-weight:600">'+fmt(c.unit*c.qty)+'</span></div></div></div>';
     }).join('');
     $('dTotal').textContent = fmt(total);
-    var text = 'Hola PIEZZA, quiero hacer este pedido:\n' + st.cart.map(function(c){
-      return '• ' + c.qty + ' x ' + c.name + ' (' + c.detail + ') — ' + fmt(c.unit*c.qty);
-    }).join('\n') + '\nTotal: ' + fmt(total);
-    $('waBtn').href = 'https://wa.me/' + WHATSAPP + '?text=' + encodeURIComponent(text);
   }
+  // La caja (checkout.js) usa esto para leer el pedido y vaciarlo al confirmar el pago
+  window.PZCart = {
+    items: function(){ return st.cart.map(function(c){ return {name:c.name, detail:c.detail, qty:c.qty, unit:c.unit, img:c.img}; }); },
+    total: function(){ return st.cart.reduce(function(a,c){ return a + c.qty*c.unit; }, 0); },
+    clear: function(){ st.cart = []; save(); renderCart(); },
+    close: function(){ closeCart(); },
+    fmt: fmt
+  };
   function addToCart(){
     var ids = EXTRAS.filter(function(e){ return st.ex[e.id]; });
     var key = st.i + '-' + st.size + '-' + ids.map(function(e){ return e.id; }).join('.');
@@ -510,5 +528,6 @@ Pedir por WhatsApp
   window.addEventListener('resize',function(){ if(window.innerWidth>900) set(false); });
 })();
 </script>
+<script src="/checkout.js"></script>
 </body>
 </html>

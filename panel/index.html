@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Panel PIEZZA — Ventas y origen</title>
+<meta name="robots" content="noindex">
+<link rel="icon" type="image/png" href="/images/favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT@9..144,700..900,100&family=Poppins:wght@400;500;600;700&display=swap">
+<style>
+:root{--red:#B3172E;--ink:#241A17;--mut:#6E625D;--line:#EFE5E1;--bg:#FBF6F1;--paid:#1F4FFF;--org:#B3172E}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);font-family:Poppins,system-ui,sans-serif;color:var(--ink);-webkit-font-smoothing:antialiased}
+.disp{font-family:Fraunces,Georgia,serif;font-variation-settings:"SOFT" 100,"opsz" 144;font-weight:850}
+.top{background:#fff;border-bottom:1px solid var(--line)}
+.wrap{max-width:1180px;margin:0 auto;padding:0 24px}
+.bar{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 0;flex-wrap:wrap}
+.bar img{height:44px;width:auto;display:block}
+.tools{display:flex;gap:8px;flex-wrap:wrap}
+.tools button,.tools a{height:42px;padding:0 16px;border-radius:999px;border:1.5px solid var(--line);background:#fff;font:500 14px Poppins,sans-serif;color:var(--ink);cursor:pointer;text-decoration:none;display:inline-flex;align-items:center}
+.tools button:hover,.tools a:hover{border-color:var(--red);color:var(--red)}
+h1{margin:28px 0 4px;font-size:38px}
+.sub{margin:0 0 22px;color:var(--mut)}
+.seg{display:inline-flex;background:#fff;border:1.5px solid var(--line);border-radius:999px;padding:4px;gap:4px;margin-bottom:18px}
+.seg button{border:0;background:transparent;border-radius:999px;height:36px;padding:0 14px;font:500 14px Poppins,sans-serif;color:var(--mut);cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--ink);color:#fff}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.k{background:#fff;border-radius:18px;padding:18px;border:1px solid var(--line)}
+.k span{font-size:13px;color:var(--mut)}
+.k b{display:block;font-family:Fraunces,Georgia,serif;font-weight:850;font-size:34px;margin-top:4px;line-height:1.1}
+.k small{color:var(--mut);font-size:12px}
+.grid2{display:grid;grid-template-columns:1.1fr .9fr;gap:14px;margin-top:14px}
+.card{background:#fff;border-radius:18px;padding:20px;border:1px solid var(--line);min-width:0}
+.card h2{margin:0 0 14px;font-size:22px}
+.fun{display:flex;flex-direction:column;gap:10px}
+.fr{display:grid;grid-template-columns:140px 1fr 70px;gap:10px;align-items:center;font-size:14px}
+.track{height:26px;background:#F4EEEB;border-radius:8px;overflow:hidden;display:flex}
+.track i{display:block;height:100%}
+.track .p{background:var(--paid)}
+.track .o{background:var(--org)}
+.fr b{text-align:right;font-variant-numeric:tabular-nums}
+.leg{display:flex;gap:16px;font-size:13px;color:var(--mut);margin-top:12px}
+.leg span{display:inline-flex;align-items:center;gap:6px}
+.leg i{width:12px;height:12px;border-radius:3px;display:inline-block}
+.split{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.sp{border-radius:14px;padding:14px;border:1.5px solid var(--line)}
+.sp .t{font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px}
+.sp .v{font-family:Fraunces,Georgia,serif;font-weight:850;font-size:28px;margin:4px 0}
+.sp .m{font-size:13px;color:var(--mut);line-height:1.6}
+.tbl{width:100%;border-collapse:collapse;font-size:14px}
+.tbl th{text-align:left;font-weight:600;color:var(--mut);font-size:12px;text-transform:uppercase;letter-spacing:.06em;padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+.tbl td{padding:10px;border-bottom:1px solid var(--line);white-space:nowrap}
+.tbl td.n,.tbl th.n{text-align:right;font-variant-numeric:tabular-nums}
+.scroll{overflow-x:auto}
+.pill{display:inline-block;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:600}
+.pill.p{background:#E6ECFF;color:#1638B8}
+.pill.o{background:#FBE7E6;color:#8C1023}
+.pill.b{background:#1F4FFF;color:#fff}
+.empty{color:var(--mut);font-size:14px;padding:12px 0}
+.links{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}
+.lk{border:1.5px dashed #E2D6D2;border-radius:14px;padding:12px 14px;font-size:14px}
+.lk code{font-weight:600;color:var(--red)}
+.lk small{display:block;color:var(--mut);margin-top:2px}
+.foot{color:var(--mut);font-size:12px;padding:26px 0 40px}
+@media (max-width:900px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.grid2{grid-template-columns:minmax(0,1fr)}h1{font-size:30px}}
+@media (max-width:480px){.fr{grid-template-columns:96px 1fr 52px}.split{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap bar">
+<a href="/" aria-label="Ir a la tienda"><img src="/images/piezza-horizontal.png" alt="PIEZZA Pizzería"></a>
+<div class="tools"><button type="button" id="refresh">Actualizar</button><a href="/">Ver tienda</a><button type="button" id="reset">Borrar datos</button></div>
+</div></header>
+
+<main class="wrap">
+<h1 class="disp">Ventas y origen de clientes</h1>
+<p class="sub">De dónde llegan, cuántos compran y cuánto vende cada canal: orgánico y pagado.</p>
+
+<div class="seg" role="group" aria-label="Periodo">
+<button type="button" data-p="1" aria-pressed="false">Hoy</button>
+<button type="button" data-p="7" aria-pressed="false">7 días</button>
+<button type="button" data-p="30" aria-pressed="false">30 días</button>
+<button type="button" data-p="0" aria-pressed="true">Todo</button>
+</div>
+
+<section class="kpis" aria-label="Resumen">
+<div class="k"><span>Clics en links</span><b id="kClicks">0</b><small id="kClicksS">&nbsp;</small></div>
+<div class="k"><span>Visitas</span><b id="kVisits">0</b><small id="kVisitsS">&nbsp;</small></div>
+<div class="k"><span>Compras</span><b id="kBuys">0</b><small id="kConv">&nbsp;</small></div>
+<div class="k"><span>Ventas</span><b id="kRev">RD$ 0</b><small id="kAov">&nbsp;</small></div>
+</section>
+
+<div class="grid2">
+<section class="card"><h2 class="disp">Embudo de compra</h2>
+<div class="fun" id="funnel"></div>
+<div class="leg"><span><i style="background:var(--org)"></i>Orgánico</span><span><i style="background:var(--paid)"></i>Pagado (anuncios)</span></div>
+</section>
+<section class="card"><h2 class="disp">Orgánico vs. pagado</h2>
+<div class="split" id="split"></div>
+<div style="margin-top:14px" id="brinco"></div>
+</section>
+</div>
+
+<section class="card" style="margin-top:14px"><h2 class="disp">Por origen</h2>
+<div class="scroll"><table class="tbl"><thead><tr><th>Origen</th><th>Tipo</th><th class="n">Visitas</th><th class="n">Carrito</th><th class="n">Pago</th><th class="n">Compras</th><th class="n">Ventas</th><th class="n">Conversión</th></tr></thead><tbody id="bySrc"></tbody></table></div>
+</section>
+
+<section class="card" style="margin-top:14px"><h2 class="disp">Últimos pedidos</h2>
+<div class="scroll"><table class="tbl"><thead><tr><th>Orden</th><th>Fecha</th><th>Cliente</th><th>Entrega</th><th>Pago</th><th>Origen</th><th class="n">Total</th></tr></thead><tbody id="orders"></tbody></table></div>
+</section>
+
+<section class="card" style="margin-top:14px"><h2 class="disp">Tus links</h2>
+<div class="links">
+<div class="lk"><code>piezza.sandscap.com.do/ig</code><small>Bio de Instagram · orgánico</small></div>
+<div class="lk"><code>piezza.sandscap.com.do/ad</code><small>Anuncios de Meta · pagado</small></div>
+<div class="lk"><code>piezza.sandscap.com.do/fb</code><small>Perfil de Facebook · orgánico</small></div>
+<div class="lk"><code>piezza.sandscap.com.do/tt</code><small>Bio de TikTok · orgánico</small></div>
+<div class="lk"><code>piezza.sandscap.com.do/wa</code><small>Estados y chats de WhatsApp · orgánico</small></div>
+</div>
+</section>
+<p class="foot">Cada visita queda marcada con el link por donde entró, y cada pedido pagado guarda ese origen.</p>
+</main>
+
+<script>
+(function(){
+  const $ = (id) => document.getElementById(id);
+  const fmt = (n) => 'RD$ ' + Math.round(n).toLocaleString('es-DO');
+  const pct = (a, b) => b ? Math.round(a * 1000 / b) / 10 + '%' : '—';
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const get = (k, d) => { try { const v = JSON.parse(localStorage.getItem(k)); return v == null ? d : v; } catch (e) { return d; } };
+  const LINKNAME = { ig: 'Instagram · bio', ad: 'Anuncio Meta', fb: 'Facebook · perfil', tt: 'TikTok · bio', wa: 'WhatsApp' };
+  let days = 0;
+
+  function render(){
+    const since = days ? Date.now() - days * 864e5 : 0;
+    const ev = get('pz_events', []).filter((e) => e.t >= since);
+    const orders = get('pz_orders', []).filter((o) => o.at >= since);
+    const clicks = ev.filter((e) => e.e === 'clic_link');
+    const visits = ev.filter((e) => e.e === 'visita');
+    const isPaid = (m) => m === 'pagado';
+    const count = (name, paid) => ev.filter((e) => e.e === name && (paid == null || isPaid(e.med) === paid)).length;
+
+    $('kClicks').textContent = clicks.length;
+    const cp = clicks.filter((c) => isPaid(c.med)).length;
+    $('kClicksS').textContent = clicks.length ? `${clicks.length - cp} orgánicos · ${cp} pagados` : 'Aún sin clics';
+    $('kVisits').textContent = visits.length;
+    $('kVisitsS').textContent = visits.length ? `${new Set(visits.map((v) => v.src)).size} orígenes distintos` : ' ';
+    $('kBuys').textContent = orders.length;
+    // Conversión = visitantes que compraron / visitantes (una persona que compra dos veces cuenta una vez)
+    const buyers = (paid) => new Set(ev.filter((e) => e.e === 'compra' && (paid == null || isPaid(e.med) === paid)).map((e) => e.sid)).size;
+    const visitors = (paid) => new Set(visits.filter((e) => paid == null || isPaid(e.med) === paid).map((e) => e.sid)).size;
+    $('kConv').textContent = 'Conversión ' + pct(buyers(), visitors());
+    const rev = orders.reduce((a, o) => a + o.total, 0);
+    $('kRev').textContent = fmt(rev);
+    $('kAov').textContent = orders.length ? 'Ticket promedio ' + fmt(rev / orders.length) : ' ';
+
+    // Embudo con barras divididas orgánico / pagado
+    const steps = [['Visitas', 'visita'], ['Agregaron al carrito', 'carrito'], ['Abrieron el pago', 'checkout'], ['Enviaron el pago', 'pago_enviado'], ['Compraron', 'compra']];
+    // Cada paso cuenta personas (sesiones únicas), no clics repetidos
+    const people = (name, paid) => new Set(ev.filter((e) => e.e === name && isPaid(e.med) === paid).map((e) => e.sid)).size;
+    const top = Math.max(1, ...steps.map(([, k]) => people(k, true) + people(k, false)));
+    $('funnel').innerHTML = steps.map(([label, k]) => {
+      const p = people(k, true), o = people(k, false), t = p + o;
+      return `<div class="fr"><span>${label}</span><span class="track" role="img" aria-label="${label}: ${o} orgánico, ${p} pagado"><i class="o" style="width:${o / top * 100}%"></i><i class="p" style="width:${p / top * 100}%"></i></span><b>${t}</b></div>`;
+    }).join('');
+
+    // Orgánico vs pagado
+    const block = (paid) => {
+      const v = count('visita', paid), b = orders.filter((x) => isPaid(x.med) === paid), r = b.reduce((a, x) => a + x.total, 0);
+      return `<div class="sp" style="border-color:${paid ? '#CFD9FF' : '#F3D3D1'}"><span class="t"><span class="pill ${paid ? 'p' : 'o'}">${paid ? 'Pagado' : 'Orgánico'}</span></span>
+        <div class="v">${fmt(r)}</div><div class="m">${v} visitas · ${b.length} compras<br>Conversión ${pct(buyers(paid), visitors(paid))}</div></div>`;
+    };
+    $('split').innerHTML = block(false) + block(true);
+    const bz = orders.filter((o) => o.via === 'brinco').length, newAcc = orders.filter((o) => o.brincoNew).length;
+    $('brinco').innerHTML = `<div class="sp" style="border-color:#DCE4FF;background:#F6F8FF"><span class="t"><span style="font-weight:800;color:#1F4FFF;font-size:16px">brinco</span></span>
+      <div class="m" style="margin-top:6px"><b style="color:#241A17">${pct(bz, orders.length)}</b> de las compras se pagaron con un toque en Brinco · ${newAcc} cuentas Brinco nuevas</div></div>`;
+
+    // Por origen
+    const srcs = {};
+    ev.forEach((e) => { if (e.e === 'clic_link') return; const k = e.src + '|' + e.med; srcs[k] = srcs[k] || { src: e.src, med: e.med, visita: 0, carrito: 0, checkout: 0, compra: 0, rev: 0, vs: new Set(), bs: new Set() }; if (srcs[k][e.e] != null) srcs[k][e.e]++; if (e.e === 'visita') srcs[k].vs.add(e.sid); if (e.e === 'compra') srcs[k].bs.add(e.sid); });
+    orders.forEach((o) => { const k = o.src + '|' + o.med; srcs[k] = srcs[k] || { src: o.src, med: o.med, visita: 0, carrito: 0, checkout: 0, compra: 0, rev: 0, vs: new Set(), bs: new Set() }; srcs[k].rev += o.total; });
+    const rows = Object.values(srcs).sort((a, b) => b.rev - a.rev || b.visita - a.visita);
+    $('bySrc').innerHTML = rows.length ? rows.map((r) => `<tr><td>${esc(r.src)}</td><td><span class="pill ${isPaid(r.med) ? 'p' : 'o'}">${isPaid(r.med) ? 'Pagado' : 'Orgánico'}</span></td><td class="n">${r.visita}</td><td class="n">${r.carrito}</td><td class="n">${r.checkout}</td><td class="n">${r.compra}</td><td class="n">${fmt(r.rev)}</td><td class="n">${pct(r.bs.size, r.vs.size)}</td></tr>`).join('')
+      : '<tr><td colspan="8" class="empty">Todavía no hay visitas en este periodo.</td></tr>';
+
+    // Pedidos
+    const list = orders.slice().reverse().slice(0, 25);
+    $('orders').innerHTML = list.length ? list.map((o) => `<tr><td><b>${esc(o.no)}</b></td><td>${new Date(o.at).toLocaleString('es-DO', { dateStyle: 'short', timeStyle: 'short' })}</td><td>${esc(o.name)}</td><td>${o.mode === 'delivery' ? 'Delivery · ' + esc(o.address && o.address.sector) : 'Recoger'}</td><td>${o.via === 'brinco' ? '<span class="pill b">Brinco</span> ' : ''}${o.card.brand === 'mastercard' ? 'MC' : 'Visa'} ${esc(o.card.last4)}</td><td><span class="pill ${isPaid(o.med) ? 'p' : 'o'}">${esc(o.src)}</span></td><td class="n">${fmt(o.total)}</td></tr>`).join('')
+      : '<tr><td colspan="7" class="empty">Todavía no hay pedidos en este periodo.</td></tr>';
+  }
+
+  document.querySelectorAll('[data-p]').forEach((b) => b.addEventListener('click', () => {
+    days = +b.dataset.p; document.querySelectorAll('[data-p]').forEach((x) => x.setAttribute('aria-pressed', String(x === b))); render();
+  }));
+  $('refresh').addEventListener('click', render);
+  $('reset').addEventListener('click', () => {
+    if (!confirm('¿Borrar las estadísticas, pedidos y cuentas Brinco guardados en este equipo?')) return;
+    ['pz_events', 'pz_orders', 'pz_src', 'brinco_accounts', 'brinco_session', 'piezza-cart'].forEach((k) => { try { localStorage.removeItem(k); } catch (e) {} });
+    render();
+  });
+  window.addEventListener('storage', render);
+  render();
+})();
+</script>
+</body>
+</html>
