@@ -44,9 +44,86 @@
     consent(acc, type, text) { (acc.consents = acc.consents || []).push({ type, text, at: new Date().toISOString(), channel: 'web', v: '2026-10' }); }
   };
 
+  // ---------- Passkeys: Face ID / huella (WebAuthn real; demo sin servidor, no se verifican firmas) ----------
+  // En este equipo se guarda solo { phone, credId } en brinco_passkey. La biometría nunca sale del teléfono.
+  const PK_TXT = {
+    faceid: { name: 'Face ID', enter: 'Entrar con Face ID', on: 'Activar Face ID', title: '¿Entrar con Face ID la próxima vez?', use: 'Mira tu celular para entrar con Face ID.', ok: 'Face ID activado', pay: 'Confirma con Face ID…' },
+    touchid: { name: 'Touch ID', enter: 'Entrar con Touch ID', on: 'Activar Touch ID', title: '¿Entrar con Touch ID la próxima vez?', use: 'Pon tu dedo en Touch ID para entrar.', ok: 'Touch ID activado', pay: 'Confirma con Touch ID…' },
+    huella: { name: 'Huella', enter: 'Entrar con tu huella', on: 'Activar huella', title: '¿Entrar con tu huella la próxima vez?', use: 'Pon tu dedo en el lector para entrar.', ok: 'Huella activada', pay: 'Confirma con tu huella…' },
+    bio: { name: 'Biometría', enter: 'Entrar con biometría', on: 'Activar biometría', title: '¿Entrar con biometría la próxima vez?', use: 'Confirma con la biometría de tu equipo.', ok: 'Biometría activada', pay: 'Confirma con tu biometría…' }
+  };
+  const PK = {
+    _ok: null,
+    kind() {
+      const ua = navigator.userAgent || '';
+      if (/Android/i.test(ua)) return 'huella';
+      if (/iPhone|iPad|iPod/i.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1)) return 'faceid';
+      if (/Macintosh/.test(ua)) return 'touchid';
+      return 'bio';
+    },
+    t(k) { return PK_TXT[PK.kind()][k]; },
+    can() { return !!(window.PublicKeyCredential && navigator.credentials && navigator.credentials.get && window.isSecureContext !== false); },
+    // ¿Este equipo tiene lector biométrico? (se pregunta una sola vez)
+    available() {
+      if (!PK._ok) {
+        PK._ok = (PK.can() && typeof PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable === 'function')
+          ? PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable().then((x) => !!x, () => false) : Promise.resolve(false);
+      }
+      return PK._ok;
+    },
+    // Passkey guardada en este equipo, solo si la cuenta todavía la tiene
+    device() {
+      const d = store.get('brinco_passkey', null);
+      if (!d || !d.phone || !d.credId) return null;
+      const acc = B.accounts()[d.phone];
+      return acc && (acc.passkeys || []).some((p) => p.id === d.credId) ? d : null;
+    },
+    rand(n) { const a = new Uint8Array(n); crypto.getRandomValues(a); return a; },
+    b64u(buf) { let s = ''; new Uint8Array(buf).forEach((b) => { s += String.fromCharCode(b); }); return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); },
+    unb64u(s) { const b = atob(s.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((s.length + 3) % 4)); return Uint8Array.from(b, (c) => c.charCodeAt(0)); },
+    create(phone, displayName) {
+      return navigator.credentials.create({ publicKey: {
+        challenge: PK.rand(32),
+        rp: { name: 'Brinco', id: location.hostname },
+        user: { id: PK.rand(16), name: phone, displayName: displayName || phone },
+        pubKeyCredParams: [{ type: 'public-key', alg: -7 }, { type: 'public-key', alg: -257 }],
+        authenticatorSelection: { authenticatorAttachment: 'platform', userVerification: 'required', residentKey: 'preferred' },
+        timeout: 60000
+      } }).then((cred) => {
+        if (!cred) throw new Error('sin credencial');
+        const id = PK.b64u(cred.rawId);
+        B.upsert(phone, (acc) => {
+          if (acc) { acc.passkeys = (acc.passkeys || []).filter((p) => p.id !== id); acc.passkeys.push({ id, kind: PK.kind(), at: new Date().toISOString() }); }
+          return acc;
+        });
+        store.set('brinco_passkey', { phone, credId: id, kind: PK.kind(), at: Date.now() });
+        S.pkAt = Date.now();
+        return id;
+      });
+    },
+    get(d) {
+      return navigator.credentials.get({ publicKey: {
+        challenge: PK.rand(32),
+        allowCredentials: [{ type: 'public-key', id: PK.unb64u(d.credId) }],
+        userVerification: 'required', rpId: location.hostname, timeout: 60000
+      } }).then((cred) => {
+        if (!cred || PK.b64u(cred.rawId) !== d.credId) throw new Error('no coincide');
+        S.pkAt = Date.now();
+        return d.phone;
+      });
+    }
+  };
+  // Ícono: rostro (Face ID / biometría) o huella (Android)
+  function pkIcon(size) {
+    size = size || 22;
+    const a = `width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"`;
+    if (PK.kind() === 'huella' || PK.kind() === 'touchid') return `<svg ${a}><path d="M12 11v2.5a9 9 0 0 1-1.6 5.2"/><path d="M8.6 10.6a3.4 3.4 0 0 1 6.8.4v1.6a13 13 0 0 1-.9 4.6"/><path d="M5.6 15.6a12 12 0 0 0 .6-4.6 5.8 5.8 0 0 1 10.6-3.3"/><path d="M18.3 10.2c.1.3.1.6.1.9 0 2.3-.3 4.4-.9 6.4"/><path d="M3.4 9.2A9 9 0 0 1 12 3a9 9 0 0 1 4.6 1.3"/><path d="M7.8 20.2a14 14 0 0 0 1.1-2.1"/></svg>`;
+    return `<svg ${a}><path d="M4 8V6.5A2.5 2.5 0 0 1 6.5 4H8M16 4h1.5A2.5 2.5 0 0 1 20 6.5V8M20 16v1.5a2.5 2.5 0 0 1-2.5 2.5H16M8 20H6.5A2.5 2.5 0 0 1 4 17.5V16"/><path d="M9 9.2v1.4M15 9.2v1.4M12 9.2v3.6h-.9M9.6 15.6a3.4 3.4 0 0 0 4.8 0"/></svg>`;
+  }
+
   // ---------- Estado de la caja ----------
   const S = { mode: 'delivery', view: 'checkout', hist: [], pendingPay: null, otpCode: '', otpPhone: '', otpNext: null,
-    bAddr: null, bCard: null, bNew: false };
+    bAddr: null, bCard: null, bNew: false, pkAsked: {}, pkAt: 0 };
 
   // ---------- DOM ----------
   const root = document.createElement('div');
@@ -288,6 +365,83 @@
   function showWa(html) { $('#waText').innerHTML = html; wa.classList.add('show'); clearTimeout(waTimer); waTimer = setTimeout(hideWa, 12000); }
   function hideWa() { wa.classList.remove('show'); }
 
+  // --- Avisos cortos ---
+  const toastEl = document.createElement('div');
+  toastEl.className = 'pk-toast';
+  toastEl.setAttribute('role', 'status');
+  document.body.appendChild(toastEl);
+  let toastTimer;
+  function toast(msg) { toastEl.textContent = msg; toastEl.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => toastEl.classList.remove('show'), 3200); }
+
+  // --- Ofrecer Face ID / huella después de crear la cuenta o confirmar el WhatsApp ---
+  function offerPasskey(phone, next) {
+    const acc = B.accounts()[phone];
+    const d = PK.device();
+    if (!acc || S.pkAsked[phone] || (d && d.phone === phone)) { next(); return; }
+    PK.available().then((ok) => {
+      if (!ok) { next(); return; }
+      S.pkAsked[phone] = true;
+      VIEWS.bPasskey(phone, next);
+    }, () => next());
+  }
+
+  VIEWS.bPasskey = function (phone, next) {
+    if (typeof phone !== 'string') { VIEWS.checkout({ replace: true }); return; }
+    const acc = B.accounts()[phone] || {};
+    const check = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1F4FFF" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+    show('bPasskey', `
+      <div class="pk-offer">
+        <span class="pk-ico">${pkIcon(46)}</span>
+        <p class="h3">${PK.t('title')}</p>
+        <p class="muted">Usa la huella o el rostro de tu celular. Tu biometría nunca sale de tu teléfono.</p>
+        <ul class="pk-pts"><li>${check}Entras y pagas en un segundo</li><li>${check}Sin códigos ni contraseñas</li></ul>
+      </div>
+      <button class="pay blue" type="button" id="pkOn">${pkIcon(22)}${PK.t('on')}</button>
+      <button class="linkbtn" type="button" id="pkSkip">Ahora no</button>`, { brinco: true, root: true });
+    let busy = false;
+    $('#pkOn', body).addEventListener('click', (e) => {
+      if (busy) return;
+      busy = true; e.currentTarget.disabled = true;
+      PK.create(phone, acc.name).then(() => {
+        track('passkey_activada', { tipo: PK.kind() });
+        VIEWS.bPasskeyOk(next);
+      }, (err) => {
+        track('passkey_fallo', { paso: 'activar', error: (err && err.name) || 'error' });
+        toast('No se activó, puedes hacerlo luego');
+        next();
+      });
+    });
+    $('#pkSkip', body).addEventListener('click', () => next());
+  };
+
+  VIEWS.bPasskeyOk = function (next) {
+    if (typeof next !== 'function') { VIEWS.checkout({ replace: true }); return; }
+    show('bPasskeyOk', `<div class="co-view done" style="padding:0">
+      <svg class="okmark" viewBox="0 0 84 84" aria-hidden="true"><circle cx="42" cy="42" r="38"/><path d="M26 43l11 11 21-23"/></svg>
+      <p class="h3">${PK.t('ok')}</p>
+      <p class="muted">La próxima vez entras y pagas con ${PK.kind() === 'faceid' ? 'una mirada' : 'un toque'}.</p></div>`, { brinco: true, root: true });
+    setTimeout(() => { if (S.view === 'bPasskeyOk') next(); }, 1300);
+  };
+
+  // --- Entrar con Face ID / huella; si falla, al WhatsApp de siempre ---
+  function passkeyLogin(d, fromLogin) {
+    show('pkWait', `<div class="co-view verify" style="padding:0">
+      <span class="pk-ico pulse">${pkIcon(46)}</span>
+      <p class="h3">Confirma que eres tú</p>
+      <p class="muted">${PK.t('use')}</p></div>`, { brinco: true, replace: !!fromLogin });
+    PK.get(d).then((phone) => {
+      B.login(phone);
+      track('passkey_login', { tipo: PK.kind(), paso: 'entrar' });
+      const acc = B.accounts()[phone];
+      S.bNew = false;
+      if (acc && acc.cards && acc.cards.length) VIEWS.bSummary({ root: true });
+      else VIEWS.bProfile();
+    }, (err) => {
+      track('passkey_fallo', { paso: 'entrar', error: (err && err.name) || 'error' });
+      VIEWS.bLogin({ replace: true, phone: d.phone, msg: 'Usa tu número de WhatsApp' });
+    });
+  }
+
   // --- 3D Secure y cobro ---
   function verify3ds() {
     const p = S.pendingPay;
@@ -352,7 +506,9 @@
     track('compra', { total: order.total, metodo: order.via, orden: order.no });
     if (window.PZCart) window.PZCart.clear();
     S.form = null;
-    VIEWS.done(order);
+    // Flujo A: cuenta creada al pagar → ofrecemos Face ID / huella antes de la confirmación
+    if (p.via === 'tarjeta' && p.save) offerPasskey(p.phone, () => VIEWS.done(order));
+    else VIEWS.done(order);
   }
 
   VIEWS.done = function (o) {
@@ -377,22 +533,31 @@
   // ---------- Hoja Brinco ----------
   function startBrinco() {
     const me = B.me();
-    if (me && me.cards && me.cards.length && (me.addresses.length || true)) { S.bNew = false; VIEWS.bSummary(); }
-    else VIEWS.bLogin();
+    if (me && me.cards && me.cards.length) { S.bNew = false; VIEWS.bSummary(); return; }
+    // Sin sesión, pero este equipo tiene Face ID / huella: entra directo (se llama dentro del toque)
+    const d = PK.can() ? PK.device() : null;
+    if (d) { passkeyLogin(d); return; }
+    VIEWS.bLogin();
   }
 
-  VIEWS.bLogin = function () {
+  VIEWS.bLogin = function (o) {
+    o = o || {};
+    const d = PK.can() ? PK.device() : null;
     show('bLogin', `
       <div class="center" style="display:flex;flex-direction:column;gap:6px;align-items:center">
         <span class="brinco-word" style="font-size:34px">brinco</span>
         <p class="h3">Paga con un toque</p>
-        <p class="muted">Entra con tu número de WhatsApp. Sin contraseñas: te mandamos un código.</p>
+        <p class="muted">${d ? 'Entra con ' + PK.t('enter').replace('Entrar con ', '') + ' o con tu número de WhatsApp.' : 'Entra con tu número de WhatsApp. Sin contraseñas: te mandamos un código.'}</p>
       </div>
-      <div class="fld"><label for="bPhone">Número de WhatsApp</label><input id="bPhone" type="tel" inputmode="tel" autocomplete="tel-national" placeholder="809-555-1234" autofocus><span class="err">Escribe tu número de WhatsApp.</span></div>
-      <button class="pay blue" type="button" id="bSend">Enviar código por WhatsApp</button>
-      <p class="muted center" style="font-size:12px">Al continuar aceptas los Términos de la Cuenta Brinco y su Política de privacidad. Nunca usamos SMS.</p>`, { brinco: true });
+      ${o.msg ? `<p class="pk-msg" role="status">${esc(o.msg)}</p>` : ''}
+      ${d ? `<button class="pay blue" type="button" id="bPk">${pkIcon(22)}${PK.t('enter')}</button><div class="co-or">o con tu WhatsApp</div>` : ''}
+      <div class="fld"><label for="bPhone">Número de WhatsApp</label><input id="bPhone" type="tel" inputmode="tel" autocomplete="tel-national" placeholder="809-555-1234" ${d ? '' : 'autofocus'}><span class="err">Escribe tu número de WhatsApp.</span></div>
+      <button class="pay ${d ? 'ghost' : 'blue'}" type="button" id="bSend">Enviar código por WhatsApp</button>
+      <p class="muted center" style="font-size:12px">Al continuar aceptas los Términos de la Cuenta Brinco y su Política de privacidad. Nunca usamos SMS.</p>`, { brinco: true, replace: o.replace });
     const ph = $('#bPhone', body);
-    if (S.form && S.form.coPhone) ph.value = S.form.coPhone;
+    if (o.phone) ph.value = fmtPhone(o.phone);
+    else if (S.form && S.form.coPhone) ph.value = S.form.coPhone;
+    if (d) $('#bPk', body).addEventListener('click', () => passkeyLogin(d, true));
     ph.addEventListener('input', () => { ph.value = fmtPhone(ph.value); setErr('bPhone', false); });
     const go = () => {
       if (!validPhone(ph.value)) { setErr('bPhone', true); ph.focus(); return; }
@@ -400,7 +565,7 @@
       sendOtp(phone, () => {
         B.login(phone);
         const acc = B.accounts()[phone];
-        if (acc && acc.cards && acc.cards.length) { S.bNew = false; VIEWS.bSummary({ root: true }); }
+        if (acc && acc.cards && acc.cards.length) { S.bNew = false; offerPasskey(phone, () => VIEWS.bSummary({ root: true })); }
         else { S.bNew = !acc; VIEWS.bProfile(); }
       });
     };
@@ -477,7 +642,8 @@
           return acc;
         });
         track('brinco_tarjeta');
-        VIEWS.bSummary({ root: true });
+        // Flujo B: cuenta lista → ofrecemos Face ID / huella y seguimos al resumen
+        offerPasskey(B.session().phone, () => VIEWS.bSummary({ root: true }));
       }, 1600);
     });
   };
@@ -491,8 +657,10 @@
     if (S.bCard == null || !cards.some((c) => c.id === S.bCard)) S.bCard = (cards.find((c) => c.main) || cards[0] || {}).id;
     const mode = S.bAddr === 'pickup' ? 'pickup' : 'delivery';
     const first = (me.name || '').split(' ')[0] || 'de nuevo';
+    const pkd = PK.can() ? PK.device() : null;
+    const pk = pkd && pkd.phone === me.phone ? pkd : null;
     show('bSummary', `
-      <div class="hello"><span class="avatar">${esc((me.name || 'B').trim().charAt(0).toUpperCase())}</span><div><p class="h3" style="font-size:24px">Hola, ${esc(first)}</p><p class="muted">${fmtPhone(me.phone)}</p></div></div>
+      <div class="hello"><span class="avatar">${esc((me.name || 'B').trim().charAt(0).toUpperCase())}</span><div><p class="h3" style="font-size:24px">Hola, ${esc(first)}</p><p class="muted">${fmtPhone(me.phone)}${pk ? ` <span class="pk-tag">${pkIcon(14)}${PK.t('name')}</span>` : ''}</p></div></div>
       ${o.error ? `<div class="azul-err" role="alert">${esc(o.error)}</div>` : ''}
       <div class="co-sec"><h3 style="color:#1F4FFF">Entrega</h3>
         ${addrs.map((a) => `<button type="button" class="opt" role="radio" data-addr="${a.id}" aria-checked="${S.bAddr === a.id}"><span class="dot"></span><span class="tx"><b>${esc(a.label || 'Casa')} · Delivery ${fmt(SHIP)}</b><span>${esc(a.street)}, ${esc(a.sector)}</span></span></button>`).join('')}
@@ -503,21 +671,37 @@
         <button class="linkbtn" type="button" id="bAddCard" style="align-self:flex-start;padding:6px 0">+ Agregar otra tarjeta</button>
       </div>
       ${sumHTML(mode)}
-      <button class="pay blue" type="button" id="bConfirm">Confirmar y pagar ${fmt(totals(mode).total)}</button>
+      <button class="pay blue" type="button" id="bConfirm">${pk ? pkIcon(20) : ''}Confirmar y pagar ${fmt(totals(mode).total)}</button>
       ${testNote}
       <button class="linkbtn" type="button" id="bOut">¿No eres ${esc(first)}? Cerrar sesión</button>`, { brinco: true, root: o.root, replace: o.replace });
     $$('[data-addr]', body).forEach((b) => b.addEventListener('click', () => { S.bAddr = b.dataset.addr === 'pickup' ? 'pickup' : +b.dataset.addr; VIEWS.bSummary({ replace: true }); }));
     $$('[data-card]', body).forEach((b) => b.addEventListener('click', () => { S.bCard = +b.dataset.card; VIEWS.bSummary({ replace: true }); }));
     $('#bAddCard', body).addEventListener('click', () => VIEWS.bCard());
     $('#bOut', body).addEventListener('click', () => { B.logout(); S.bAddr = S.bCard = null; VIEWS.checkout({ replace: true }); });
-    $('#bConfirm', body).addEventListener('click', () => {
+    let paying = false;
+    $('#bConfirm', body).addEventListener('click', (e) => {
+      if (paying) return;
       const card = cards.find((c) => c.id === S.bCard);
       const addr = addrs.find((a) => a.id === S.bAddr) || null;
       S.mode = mode;
       S.pendingPay = { via: 'brinco', name: me.name, phone: me.phone, mode, address: mode === 'delivery' ? addr : null,
         card: { brand: card.brand, last4: card.last4, exp: card.exp, declineCode: card.declineCode || null }, total: totals(mode).total };
-      track('pago_enviado', { total: S.pendingPay.total, metodo: 'brinco' });
-      processing();
+      const pay = () => { track('pago_enviado', { total: S.pendingPay.total, metodo: 'brinco' }); processing(); };
+      // Con Face ID / huella activo: se pide justo antes de cobrar (salvo que acabe de usarlo hace menos de 2 min)
+      if (pk && !(S.pkAt && Date.now() - S.pkAt < 120000)) {
+        paying = true;
+        const btn = e.currentTarget; btn.disabled = true; btn.innerHTML = pkIcon(20) + esc(PK.t('pay'));
+        PK.get(pk).then(() => {
+          track('passkey_login', { tipo: PK.kind(), paso: 'pago' });
+          pay();
+        }, (err) => {
+          track('passkey_fallo', { paso: 'pago', error: (err && err.name) || 'error' });
+          toast('Usa tu número de WhatsApp');
+          sendOtp(me.phone, pay);
+        });
+        return;
+      }
+      pay();
     });
   };
 

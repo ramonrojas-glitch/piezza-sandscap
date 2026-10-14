@@ -197,7 +197,7 @@ h1{margin:28px 0 4px;font-size:38px}
   $('refresh').addEventListener('click', render);
   $('reset').addEventListener('click', () => {
     if (!confirm('¿Borrar las estadísticas, pedidos y cuentas Brinco guardados en este equipo?')) return;
-    ['pz_events', 'pz_orders', 'pz_src', 'brinco_accounts', 'brinco_session', 'piezza-cart'].forEach((k) => { try { localStorage.removeItem(k); } catch (e) {} });
+    ['pz_events', 'pz_orders', 'pz_src', 'brinco_accounts', 'brinco_session', 'brinco_passkey', 'piezza-cart'].forEach((k) => { try { localStorage.removeItem(k); } catch (e) {} });
     render();
   });
   window.addEventListener('storage', render);

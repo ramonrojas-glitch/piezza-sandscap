@@ -137,3 +137,19 @@
 .co.is-brinco .fld input:focus,.co.is-brinco .fld select:focus{border-color:#1F4FFF;box-shadow:0 0 0 3px #E2E8FF}
 .co.is-brinco .seg button[aria-pressed="true"]{border-color:#1F4FFF;background:#F6F8FF;box-shadow:0 0 0 3px #E2E8FF}
 .co.is-brinco .chk input{accent-color:#1F4FFF}
+
+/* Passkeys: Face ID / huella */
+.pay svg{flex:none}
+.pay.ghost{background:#fff;color:#1F4FFF;border:1.5px solid #C9D5FF;box-shadow:none}
+.pay.ghost:hover{background:#F6F8FF}
+.pk-offer{display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px;padding-top:6px}
+.pk-ico{width:84px;height:84px;border-radius:24px;background:#F2F5FF;border:1.5px solid #DCE4FF;color:#1F4FFF;display:grid;place-items:center;flex:none}
+.pk-ico.pulse{animation:pkPulse 1.4s ease-in-out infinite}
+@keyframes pkPulse{50%{box-shadow:0 0 0 12px rgba(31,79,255,.1)}}
+.pk-pts{list-style:none;margin:4px 0 0;padding:0;display:flex;flex-direction:column;gap:8px;font-size:14px;color:#3A2E2A;text-align:left}
+.pk-pts li{display:flex;gap:8px;align-items:center}
+.pk-msg{background:#F2F5FF;border:1px solid #DCE4FF;color:#1F3A9E;border-radius:12px;padding:10px 12px;font-size:14px;margin:0;text-align:center}
+.pk-tag{display:inline-flex;align-items:center;gap:4px;margin-left:6px;padding:2px 8px;border-radius:999px;background:#F2F5FF;color:#1F4FFF;font-size:12px;font-weight:600;vertical-align:1px}
+.pk-toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));z-index:121;transform:translate(-50%,180%);background:#241A17;color:#fff;border-radius:999px;padding:12px 18px;font:500 14px Poppins,system-ui,sans-serif;box-shadow:0 16px 36px -14px rgba(0,0,0,.5);transition:transform .35s cubic-bezier(.2,.85,.25,1);max-width:calc(100vw - 32px);text-align:center;pointer-events:none}
+.pk-toast.show{transform:translate(-50%,0)}
+@media (prefers-reduced-motion:reduce){.pk-ico.pulse{animation:none}.pk-toast{transition:none}}
