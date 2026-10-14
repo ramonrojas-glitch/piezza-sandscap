@@ -557,7 +557,8 @@
       <p class="h3">¡Pedido confirmado!</p>
       <span class="ordno">Orden ${o.no}</span>
       <span class="eta"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>${o.mode === 'delivery' ? 'Llega en 35–45 min' : 'Lista para recoger en 20 min'}</span>
-      <p class="muted">Te escribimos por WhatsApp al ${fmtPhone(o.phone)} cuando salga del horno.</p>
+      <p class="muted">Te avisamos por WhatsApp al ${fmtPhone(o.phone)} en cada paso, con el link para seguirlo.</p>
+      <a class="pay track-btn" href="/pedido/?o=${encodeURIComponent(o.no)}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-6.1-7-11.5A7 7 0 0 1 19 9.5C19 14.9 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>Seguir mi pedido</a>
       <div class="receipt">
         ${o.items.map((c) => `<div class="l" style="display:flex;justify-content:space-between;gap:8px"><span>${c.qty} × ${esc(c.name)}</span><span>${fmt(c.qty * c.unit)}</span></div>`).join('')}
         <div style="display:flex;justify-content:space-between;color:#6E625D"><span>${o.mode === 'delivery' ? 'Envío' : 'Recoger en tienda'}</span><span>${o.ship ? fmt(o.ship) : 'Gratis'}</span></div>
@@ -565,8 +566,9 @@
         <div style="color:#6E625D;font-size:13px">${o.via === 'brinco' ? 'Pagado con Brinco · ' : ''}${brandName(o.card.brand)} •••• ${o.card.last4} · Autorización ${o.auth}${o.address ? '<br>Entrega: ' + esc(o.address.street) + ', ' + esc(o.address.sector) : ''}</div>
       </div>
       ${o.brincoNew ? `<div class="brinco-ok"><span class="brinco-word" style="font-size:18px">brinco</span><br><b>Tu Cuenta Brinco quedó lista.</b> La próxima vez pagas con un toque aquí y en cualquier negocio Brinco.</div>` : ''}
-      <button class="pay" type="button" data-x>Seguir comprando</button>
+      <button class="linkbtn" type="button" data-x>Seguir comprando</button>
       ${badgesHTML}</div>`, { root: true, replace: true, title: 'Listo', brinco: false });
+    if (window.PZPill) window.PZPill();
     $('#coBack', root).hidden = true;
   };
 
