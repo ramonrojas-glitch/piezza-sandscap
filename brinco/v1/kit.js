@@ -1,4 +1,4 @@
-/*! Brinco Kit v1 · Sandscap · 2026-10-14T17:48Z */
+/*! Brinco Kit v1 · Sandscap · 2026-10-14T17:56Z */
 (function () {
 'use strict';
 
@@ -186,11 +186,44 @@ function loadConfig() {
     .then((r) => (r.ok ? r.json() : {}))
     .catch(() => ({}));
 }
+// ---- Contraste (WCAG) para textos sobre el color de la marca ----
+function hexRgb(h) {
+  h = String(h || '').trim().replace('#', '');
+  if (h.length === 3) h = h.split('').map((x) => x + x).join('');
+  if (!/^[0-9a-f]{6}$/i.test(h)) return null;
+  return [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16));
+}
+function lum(rgb) { const f = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }; return 0.2126 * f(rgb[0]) + 0.7152 * f(rgb[1]) + 0.0722 * f(rgb[2]); }
+function contrast(a, b) { const x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); }
+const toHex = (rgb) => '#' + rgb.map((v) => Math.round(v).toString(16).padStart(2, '0')).join('');
+const DARK_INK = [31, 26, 21];   // #1F1A15
+function onBrand(c) {
+  if (c.colorSobreMarca) return c.colorSobreMarca;
+  const b = hexRgb(c.color); if (!b) return '#fff';
+  return contrast(b, [255, 255, 255]) >= 4.5 || contrast(b, [255, 255, 255]) >= contrast(b, DARK_INK) ? '#fff' : '#1F1A15';
+}
+// Color de marca para TEXTO sobre fondo claro: se oscurece hasta 4.5:1 si hace falta
+function brandText(c) {
+  if (c.colorMarcaTexto) return c.colorMarcaTexto;
+  let b = hexRgb(c.color); if (!b) return c.color;
+  for (let i = 0; i < 20 && contrast(b, [255, 255, 255]) < 4.5; i++) b = b.map((v) => v * 0.9);
+  return toHex(b);
+}
+// Texto sobre superficies blancas del kit (la hoja, tarjetas): oscuro aunque el sitio sea de tema oscuro
+function surfaceInk(c) {
+  if (c.colorTextoSuperficie) return c.colorTextoSuperficie;
+  const t = hexRgb(c.colorTexto);
+  return t && contrast(t, [255, 255, 255]) < 4.5 ? '#1F1A15' : c.colorTexto;
+}
+Brinco._color = { contrast: (a, b) => contrast(hexRgb(a), hexRgb(b)), onBrand, brandText, surfaceInk };
 function applyConfig(c) {
   const r = document.documentElement.style;
   r.setProperty('--bk-brand', c.color);
   r.setProperty('--bk-ink', c.colorTexto);
   r.setProperty('--bk-bg', c.colorFondo);
+  r.setProperty('--bk-on-brand', onBrand(c));
+  r.setProperty('--bk-brand-text', brandText(c));
+  r.setProperty('--bk-surface-ink', surfaceInk(c));
   if (c.fuenteTitulos) r.setProperty('--bk-font-title', `"${c.fuenteTitulos}", Georgia, serif`);
   if (c.fuenteTexto) r.setProperty('--bk-font-body', `"${c.fuenteTexto}", system-ui, sans-serif`);
   if (c.googleFonts && !document.querySelector('link[data-bk-fonts]')) {
@@ -1493,7 +1526,7 @@ Brinco._ui.isOpen = () => !!(root && root.classList.contains('bk-open'));
     var d = M.dominio();
     root.innerHTML =
       '<h1 class="bk-pn-h1">Ventas y origen de clientes</h1>' +
-      '<p class="bk-pn-sub">' + M.esc(M.short()) + ': de dónde llegan, cuántos compran y cuánto vende cada canal, orgánico y pagado.</p>' +
+      '<p class="bk-pn-sub">De dónde llegan los clientes de ' + M.esc(M.short()) + ', cuántos compran y cuánto vende cada canal, orgánico y pagado.</p>' +
       '<div class="bk-pn-seg" role="group" aria-label="Periodo">' +
         '<button type="button" data-p="1" aria-pressed="false">Hoy</button><button type="button" data-p="7" aria-pressed="false">7 días</button>' +
         '<button type="button" data-p="30" aria-pressed="false">30 días</button><button type="button" data-p="0" aria-pressed="true">Todo</button></div>' +
@@ -1515,7 +1548,7 @@ Brinco._ui.isOpen = () => !!(root && root.classList.contains('bk-open'));
       '<section class="bk-pn-card bk-pn-mt"><h2 class="bk-pn-h2">Tus links</h2><div class="bk-pn-links">' +
         LINKS.map(function (l) { return '<div class="bk-pn-lk"><code>' + M.esc(d) + '/' + l[0] + '</code><small>' + l[1] + '</small></div>'; }).join('') +
       '</div></section>' +
-      '<p class="bk-pn-foot">Cada visita queda marcada con el link por donde entró, y cada pedido pagado guarda ese origen. Datos de este equipo (demo).</p>';
+      '<p class="bk-pn-foot">Cada visita queda marcada con el link por donde entró, y cada pedido pagado guarda ese origen. Datos de este equipo.</p>';
   }
 
   function render(root, days) {
@@ -1667,6 +1700,11 @@ Brinco._ui.isOpen = () => !!(root && root.classList.contains('bk-open'));
     return 'https://maps.google.com/?q=' + encodeURIComponent(q || M.name());
   }
   function streetLabel(s) { return String(s || '').split(',')[0].replace(/\s+#?\d+[A-Za-z]?$/, '').slice(0, 28); }
+  // etapas.salida: "de la barra", "del horno"… (opcional)
+  function waitText() {
+    var sal = String((M.cfg().etapas || {}).salida || '').trim().replace(/[.\s]+$/, '');
+    return 'Te asignamos un rider en cuanto tu pedido ' + (sal ? 'salga ' + M.esc(sal) : 'esté listo') + '.';
+  }
   function isRoad(s) { return s && (s.k === 'camino' || /camino/i.test(s.label || '')); }
 
   function mapSVG(o) {
@@ -1714,7 +1752,7 @@ Brinco._ui.isOpen = () => !!(root && root.classList.contains('bk-open'));
       : '<div class="bk-p-rider" data-bk-rider hidden><span class="bk-p-av">' + r.ini + '</span><div class="bk-p-tx"><b>' + r.name + '</b><span>' + r.moto + '</span></div>' +
         '<button class="bk-p-ib" type="button" data-act="llamar" aria-label="Llamar a ' + r.name + '">' + I_PHONE + '</button>' +
         '<button class="bk-p-ib bk-p-wa" type="button" data-act="whatsapp" aria-label="Escribir por WhatsApp a ' + r.name + '">' + I_WA + '</button></div>' +
-        '<p class="bk-p-sub bk-p-wait" data-bk-wait>Te asignamos un rider en cuanto tu pedido salga de cocina.</p>';
+        '<p class="bk-p-sub bk-p-wait" data-bk-wait>' + waitText() + '</p>';
     app.innerHTML =
       '<h1 class="bk-p-h1">Tu pedido</h1>' +
       '<p class="bk-p-sub">Hecho a las ' + M.hhmm(o.at) + ' · ' + (pick ? 'Recoger en tienda' : 'Delivery') + '</p>' +
@@ -1835,6 +1873,23 @@ Brinco._ui.isOpen = () => !!(root && root.classList.contains('bk-open'));
     if (B._ui && typeof B._ui.isOpen === 'function') { try { if (B._ui.isOpen()) return true; } catch (e) {} }
     return !!document.querySelector('.bk-sheet.bk-open,.bk-sheet[open],.bk-sheet.is-open,.bk-co.bk-open');
   }
+  // Diálogos o cajones del sitio (carrito, menú…): la píldora no debe tapar sus botones
+  var LOCK = /(^|\s)(cart-open|cart-is-open|open-cart|drawer-open|menu-open|nav-open|modal-open|dialog-open|no-scroll|noscroll|scroll-lock|is-locked|locked|lock|overflow-hidden)(\s|$)/;
+  function shown(el) {
+    if (el.closest('.bk-pill') || el.closest('[aria-hidden="true"]') || el.hidden) return false;
+    var cs = getComputedStyle(el);
+    if (cs.display === 'none' || cs.visibility === 'hidden' || +cs.opacity === 0) return false;
+    var r = el.getBoundingClientRect();
+    return r.width > 0 && r.height > 0 && r.right > 1 && r.bottom > 1 && r.left < innerWidth - 1 && r.top < innerHeight - 1;
+  }
+  function siteOverlay() {
+    var h = document.documentElement, b = document.body;
+    if (LOCK.test(h.className) || LOCK.test(b.className)) return true;
+    if (b.style.overflow === 'hidden' || h.style.overflow === 'hidden') return true;
+    var ds = document.querySelectorAll('[aria-modal="true"],[role="dialog"],[role="alertdialog"],dialog[open]');
+    for (var i = 0; i < ds.length; i++) if (shown(ds[i])) return true;
+    return false;
+  }
 
   M.ready(function () {
     // Core puede llenar el pie primero; esperamos un tick y solo llenamos los vacíos
@@ -1848,20 +1903,26 @@ Brinco._ui.isOpen = () => !!(root && root.classList.contains('bk-open'));
     document.body.appendChild(a);
     function upd() {
       var o = null; try { o = B.orders.active(); } catch (e) {}
-      if (!o || sheetOpen()) { a.classList.remove('bk-show'); a.setAttribute('aria-hidden', 'true'); a.tabIndex = -1; return; }
+      if (!o || sheetOpen() || siteOverlay()) { if (a.classList.contains('bk-show')) { a.classList.remove('bk-show'); a.setAttribute('aria-hidden', 'true'); a.tabIndex = -1; } return; }
       var s = null; try { s = B.orders.status(o); } catch (e) {}
-      a.href = '/pedido/?o=' + encodeURIComponent(o.no);
+      var hr = '/pedido/?o=' + encodeURIComponent(o.no); if (a.getAttribute('href') !== hr) a.setAttribute('href', hr);
       var word = s && s.stage ? (SHORT[s.stage.k] || s.stage.label) : '';
       var txt = o.no + (word ? ' · ' + word : '');
       var span = a.querySelector('.bk-pill-tx'); if (span.textContent !== txt) span.textContent = txt;
-      a.setAttribute('aria-label', 'Tu pedido ' + o.no + (s && s.stage ? ', ' + s.stage.label : '') + '. Ver pedido');
-      a.classList.add('bk-show'); a.removeAttribute('aria-hidden'); a.tabIndex = 0;
+      var lbl = 'Tu pedido ' + o.no + (s && s.stage ? ', ' + s.stage.label : '') + '. Ver pedido'; if (a.getAttribute('aria-label') !== lbl) a.setAttribute('aria-label', lbl);
+      if (!a.classList.contains('bk-show')) { a.classList.add('bk-show'); a.removeAttribute('aria-hidden'); a.tabIndex = 0; }
     }
     M.pill = upd;
-    upd(); setInterval(upd, 3000);
+    upd(); setInterval(upd, 1000);
     // Reacciona enseguida al pagar y al cerrar la hoja del kit
     window.addEventListener('brinco:order', function () { setTimeout(upd, 50); });
-    try { new MutationObserver(function () { upd(); }).observe(document.documentElement, { attributes: true, attributeFilter: ['class'] }); } catch (e) {}
+    // Un cajón que se cierra con transición no cambia atributos al terminar: revisamos al final
+    document.addEventListener('transitionend', function () { upd(); }, true);
+    var raf = 0;
+    try {
+      new MutationObserver(function (ms) { if (raf || ms.every(function (m) { return a.contains(m.target) || m.target === a; })) return; raf = requestAnimationFrame(function () { raf = 0; upd(); }); })
+        .observe(document.documentElement, { attributes: true, subtree: true, childList: true, attributeFilter: ['class', 'style', 'open', 'hidden', 'aria-hidden', 'aria-modal'] });
+    } catch (e) {}
   });
 })();
 })();
