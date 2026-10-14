@@ -1,4 +1,4 @@
-/*! Brinco Kit v1 · Sandscap · 2026-10-14T17:41Z */
+/*! Brinco Kit v1 · Sandscap · 2026-10-14T17:48Z */
 (function () {
 'use strict';
 
@@ -1826,6 +1826,8 @@ Brinco._ui.isOpen = () => !!(root && root.classList.contains('bk-open'));
 (function () {
   var M = window.__bkm; if (!M) return;
 
+  // Palabra corta para que quepa en 360 px (la etapa completa va en aria-label y en /pedido/)
+  var SHORT = { recibido: 'Recibido', preparando: 'Preparando', coccion: 'Preparando', camino: 'En camino', entregado: 'Entregado', lista: 'Lista', recogido: 'Entregado' };
   function sheetOpen() {
     var h = document.documentElement;
     if (h.classList.contains('bk-open') || h.classList.contains('bk-lock')) return true;
@@ -1842,16 +1844,17 @@ Brinco._ui.isOpen = () => !!(root && root.classList.contains('bk-open'));
     var B = window.Brinco; if (!B || !B.orders || !B.orders.active) return;
     var a = document.createElement('a');
     a.className = 'bk-pill'; a.setAttribute('aria-live', 'polite'); a.setAttribute('aria-hidden', 'true'); a.tabIndex = -1;
-    a.innerHTML = '<i aria-hidden="true"></i><span></span><b>Ver</b>';
+    a.innerHTML = '<i aria-hidden="true"></i><span><em class="bk-pill-pre">Tu pedido </em><span class="bk-pill-tx"></span></span><b>Ver</b>';
     document.body.appendChild(a);
     function upd() {
       var o = null; try { o = B.orders.active(); } catch (e) {}
       if (!o || sheetOpen()) { a.classList.remove('bk-show'); a.setAttribute('aria-hidden', 'true'); a.tabIndex = -1; return; }
       var s = null; try { s = B.orders.status(o); } catch (e) {}
       a.href = '/pedido/?o=' + encodeURIComponent(o.no);
-      var txt = 'Tu pedido ' + o.no + (s && s.stage ? ' · ' + s.stage.label : '');
-      var span = a.querySelector('span'); if (span.textContent !== txt) span.textContent = txt;
-      a.setAttribute('aria-label', txt + '. Ver pedido');
+      var word = s && s.stage ? (SHORT[s.stage.k] || s.stage.label) : '';
+      var txt = o.no + (word ? ' · ' + word : '');
+      var span = a.querySelector('.bk-pill-tx'); if (span.textContent !== txt) span.textContent = txt;
+      a.setAttribute('aria-label', 'Tu pedido ' + o.no + (s && s.stage ? ', ' + s.stage.label : '') + '. Ver pedido');
       a.classList.add('bk-show'); a.removeAttribute('aria-hidden'); a.tabIndex = 0;
     }
     M.pill = upd;

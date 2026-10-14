@@ -380,7 +380,8 @@ html.bk-panel-page body{background:color-mix(in srgb,var(--bk-bg,#FBF6F1) 70%,#F
 .bk-pill{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom,0px));transform:translate(-50%,160%);visibility:hidden;z-index:90;display:flex;align-items:center;gap:10px;background:var(--bk-ink,#241A17);color:#fff;border-radius:999px;padding:8px 8px 8px 16px;box-shadow:0 16px 36px -14px rgba(0,0,0,.55);font:500 14px var(--bk-font-body,system-ui),system-ui,sans-serif;text-decoration:none;transition:transform .45s cubic-bezier(.2,.85,.25,1),visibility 0s linear .45s;max-width:calc(100vw - 24px);white-space:nowrap;box-sizing:border-box}
 .bk-pill.bk-show{transform:translate(-50%,0);visibility:visible;transition:transform .45s cubic-bezier(.2,.85,.25,1),visibility 0s}
 .bk-pill i{width:9px;height:9px;border-radius:50%;background:#3BD16F;flex:none;animation:bkPillBlink 1.4s ease-in-out infinite}
-.bk-pill span{overflow:hidden;text-overflow:ellipsis;min-width:0}
+.bk-pill>span{overflow:hidden;text-overflow:ellipsis;min-width:0}.bk-pill-pre{font-style:normal}
+@media (max-width:480px){.bk-pill-pre{display:none}.bk-pill{gap:8px;padding-left:14px}}
 .bk-pill b{background:var(--bk-brand,#B3172E);color:#fff;border-radius:999px;padding:7px 14px;font-weight:600;flex:none}
 .bk-pill:focus-visible{outline:3px solid #fff;outline-offset:2px}
 @keyframes bkPillBlink{50%{opacity:.35}}
