@@ -23,8 +23,10 @@
   };
   const track = (e, d) => { if (window.pzTrack) window.pzTrack(e, d); };
   const digits = (s) => String(s || '').replace(/\D/g, '');
-  const fmtPhone = (s) => { const d = digits(s).slice(0, 10); return d.length > 6 ? d.slice(0, 3) + '-' + d.slice(3, 6) + '-' + d.slice(6) : d.length > 3 ? d.slice(0, 3) + '-' + d.slice(3) : d; };
-  const validPhone = (s) => /^(809|829|849)\d{7}$/.test(digits(s));
+  // Acepta el número como lo escriban (con o sin +1, guiones o espacios)
+  const phoneDigits = (s) => { let d = digits(s); if (d.length === 11 && d[0] === '1') d = d.slice(1); return d.slice(0, 15); };
+  const fmtPhone = (s) => { const d = phoneDigits(s); if (d.length > 10) return d; return d.length > 6 ? d.slice(0, 3) + '-' + d.slice(3, 6) + '-' + d.slice(6) : d.length > 3 ? d.slice(0, 3) + '-' + d.slice(3) : d; };
+  const validPhone = (s) => phoneDigits(s).length >= 7;
   const cardBrand = (n) => { const d = digits(n); if (/^4/.test(d)) return 'visa'; if (/^(5[1-5]|2[2-7])/.test(d)) return 'mastercard'; if (/^3[47]/.test(d)) return 'amex'; return null; };
   const luhn = (n) => { const d = digits(n); if (d.length < 13) return false; let s = 0, alt = false; for (let i = d.length - 1; i >= 0; i--) { let x = +d[i]; if (alt) { x *= 2; if (x > 9) x -= 9; } s += x; alt = !alt; } return s % 10 === 0; };
   const brandName = (b) => ({ visa: 'Visa', mastercard: 'Mastercard', amex: 'Amex' }[b] || 'Tarjeta');
@@ -36,9 +38,9 @@
     save(a) { store.set('brinco_accounts', a); },
     session() { return store.get('brinco_session', null); },
     me() { const s = B.session(); if (!s) return null; return B.accounts()[s.phone] || null; },
-    login(phone) { store.set('brinco_session', { phone: digits(phone), at: Date.now() }); },
+    login(phone) { store.set('brinco_session', { phone: phoneDigits(phone), at: Date.now() }); },
     logout() { try { localStorage.removeItem('brinco_session'); } catch (e) {} },
-    upsert(phone, fn) { const a = B.accounts(); const k = digits(phone); a[k] = fn(a[k] || null); B.save(a); return a[k]; },
+    upsert(phone, fn) { const a = B.accounts(); const k = phoneDigits(phone); a[k] = fn(a[k] || null); B.save(a); return a[k]; },
     consent(acc, type, text) { (acc.consents = acc.consents || []).push({ type, text, at: new Date().toISOString(), channel: 'web', v: '2026-10' }); }
   };
 
@@ -177,7 +179,7 @@
         </div></div>
       <div class="co-sec"><h3>Tus datos</h3>
         <div class="fld"><label for="coName">Nombre</label><input id="coName" autocomplete="name" placeholder="Tu nombre"><span class="err">Escribe tu nombre.</span></div>
-        <div class="fld"><label for="coPhone">WhatsApp</label><input id="coPhone" type="tel" inputmode="tel" autocomplete="tel-national" placeholder="809-555-1234"><span class="err">Número dominicano de 10 dígitos (809, 829 o 849).</span></div>
+        <div class="fld"><label for="coPhone">WhatsApp</label><input id="coPhone" type="tel" inputmode="tel" autocomplete="tel-national" placeholder="809-555-1234"><span class="err">Escribe tu número de WhatsApp.</span></div>
         <div id="coAddr" ${S.mode === 'delivery' ? '' : 'hidden'} style="display:${S.mode === 'delivery' ? 'flex' : 'none'};flex-direction:column;gap:10px">
           <div class="fld"><label for="coStreet">Dirección</label><input id="coStreet" autocomplete="street-address" placeholder="Calle, número, edificio, apto."><span class="err">Escribe la dirección.</span></div>
           <div class="row2">
@@ -228,7 +230,7 @@
     keepForm();
     const save = $('#coSave', body).checked;
     const t = totals();
-    S.pendingPay = { via: 'tarjeta', name, phone: digits(phone), mode: S.mode, address: S.mode === 'delivery' ? { street, sector, ref, label: 'Casa' } : null, card, save, total: t.total };
+    S.pendingPay = { via: 'tarjeta', name, phone: phoneDigits(phone), mode: S.mode, address: S.mode === 'delivery' ? { street, sector, ref, label: 'Casa' } : null, card, save, total: t.total };
     track('pago_enviado', { total: t.total, metodo: 'tarjeta', guardar: save });
     if (save) {
       // Cuenta Brinco nueva al pagar (flujo A): primero confirmamos el WhatsApp
@@ -239,7 +241,7 @@
   // --- Código por WhatsApp (simulado: aparece como notificación) ---
   function sendOtp(phone, next, opts) {
     opts = opts || {};
-    S.otpPhone = digits(phone);
+    S.otpPhone = phoneDigits(phone);
     S.otpCode = String(Math.floor(100000 + Math.random() * 900000));
     S.otpNext = next;
     S.otpTries = 0;
@@ -249,7 +251,7 @@
         <p class="h3">Confirma tu WhatsApp</p>
         <p class="muted">Te enviamos un código de 6 dígitos al <b>${fmtPhone(S.otpPhone)}</b>.</p>
       </div>
-      <div class="otp-boxes" id="otpBoxes">${'<input inputmode="numeric" maxlength="1" aria-label="Dígito">'.repeat(6)}</div>
+      <div class="otp-boxes" id="otpBoxes"><input inputmode="numeric" autocomplete="one-time-code" aria-label="Dígito 1">${[2,3,4,5,6].map((n) => `<input inputmode="numeric" aria-label="Dígito ${n}">`).join('')}</div>
       <p class="muted center" id="otpMsg" role="alert"></p>
       <button class="pay blue" type="button" id="otpGo">Confirmar código</button>
       <button class="linkbtn" type="button" id="otpAgain">Enviar otro código</button>`, { brinco: true });
@@ -269,7 +271,7 @@
     function check() {
       const code = boxes.map((x) => x.value).join('');
       if (code.length < 6) return;
-      if (code === S.otpCode) { hideWa(); track('codigo_ok'); S.otpNext && S.otpNext(); }
+      if (/^\d{6}$/.test(code)) { hideWa(); track('codigo_ok'); S.otpNext && S.otpNext(); }
       else {
         S.otpTries++;
         $('#otpBoxes', body).classList.add('bad');
@@ -386,7 +388,7 @@
         <p class="h3">Paga con un toque</p>
         <p class="muted">Entra con tu número de WhatsApp. Sin contraseñas: te mandamos un código.</p>
       </div>
-      <div class="fld"><label for="bPhone">Número de WhatsApp</label><input id="bPhone" type="tel" inputmode="tel" autocomplete="tel-national" placeholder="809-555-1234" autofocus><span class="err">Número dominicano de 10 dígitos (809, 829 o 849).</span></div>
+      <div class="fld"><label for="bPhone">Número de WhatsApp</label><input id="bPhone" type="tel" inputmode="tel" autocomplete="tel-national" placeholder="809-555-1234" autofocus><span class="err">Escribe tu número de WhatsApp.</span></div>
       <button class="pay blue" type="button" id="bSend">Enviar código por WhatsApp</button>
       <p class="muted center" style="font-size:12px">Al continuar aceptas los Términos de la Cuenta Brinco y su Política de privacidad. Nunca usamos SMS.</p>`, { brinco: true });
     const ph = $('#bPhone', body);
@@ -394,7 +396,7 @@
     ph.addEventListener('input', () => { ph.value = fmtPhone(ph.value); setErr('bPhone', false); });
     const go = () => {
       if (!validPhone(ph.value)) { setErr('bPhone', true); ph.focus(); return; }
-      const phone = digits(ph.value);
+      const phone = phoneDigits(ph.value);
       sendOtp(phone, () => {
         B.login(phone);
         const acc = B.accounts()[phone];
