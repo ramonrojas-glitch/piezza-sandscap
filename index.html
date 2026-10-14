@@ -194,6 +194,7 @@ body.cart-open{overflow:hidden}
 }
 @media (prefers-reduced-motion:reduce){.pizza{animation:none}.pz,.tx,.drawer,.scrim{transition:none}}
 </style>
+<script src="/track.js"></script>
 </head>
 <body>
 
@@ -455,6 +456,7 @@ Pedir por WhatsApp
     else st.cart.push({key:key, name:PZ[st.i].name, img:PZ[st.i].img, qty:1, unit:unitPrice(),
       detail: SIZES[st.size].label + (ids.length ? ' · ' + ids.map(function(e){ return e.name; }).join(', ') : '')});
     save(); renderCart();
+    if (window.pzTrack) pzTrack('carrito', { pizza: PZ[st.i].name, total: unitPrice() });
     var btn = $('addBtn'); btn.textContent = '✓ ¡AGREGADA!';
     clearTimeout(addToCart.t); addToCart.t = setTimeout(function(){ btn.textContent = 'AGREGAR AL CARRITO'; }, 1400);
     var badge = $('badge'); badge.classList.remove('bump'); void badge.offsetWidth; badge.classList.add('bump');
