@@ -1,4 +1,4 @@
-/*! Brinco Kit v1 · Sandscap · 2026-10-14T17:56Z */
+/*! Brinco Kit v1 · Sandscap · 2026-10-14T18:02Z */
 (function () {
 'use strict';
 
@@ -110,7 +110,8 @@ const STR = {
     pkPoints1: 'Entras y pagas en un segundo', pkPoints2: 'Sin códigos ni contraseñas', pkBio: 'Usa la huella o el rostro de tu celular. Tu biometría nunca sale de tu teléfono.',
     notNow: 'Ahora no', pkNext: 'La próxima vez entras y pagas con {x}.', aLook: 'una mirada', aTouch: 'un toque',
     pkConfirm: 'Confirma que eres tú', pkFail: 'No se activó, puedes hacerlo luego', useWa: 'Usa tu número de WhatsApp',
-    pkBanner: 'Paga con {x}, sin códigos', activate: 'Activar', safariT: 'Paga con Face ID', safariTx: 'Abre {n} en Safari para usar tu rostro', open: 'Abrir',
+    pkBanner: 'Paga con {x}, sin códigos', activate: 'Activar', safariT: 'Paga con {x}', safariTx: 'Abre {n} en {b} para usar {x}', yourFace: 'tu rostro', yourPrint: 'tu huella',
+    pkOutTitle: 'Activa {x} en {b}', pkOutTx: 'El navegador de {app} no permite usar {x}. Ábrelo en {b} y actívalo en un toque.', openIn: 'Abrir en {b}', pkHint: 'Toca Pagar con Brinco y activa {x}', open: 'Abrir',
     vaultLine: 'Brinco <b>no guarda</b> tu tarjeta. La protegen <b>AZUL</b>, <b>CardNet</b> o <b>MIO</b>.',
     vaultT: 'Brinco no guarda tu tarjeta', vaultTx: 'Tu tarjeta queda guardada y protegida por el procesador de pago certificado PCI DSS. Brinco solo recibe un código seguro (token) que no sirve fuera de tu cuenta.',
     vaultFooter: '<b>Brinco no guarda tarjetas.</b> Tus datos de pago quedan protegidos por el procesador certificado PCI DSS: <b>AZUL</b>, <b>CardNet</b> o <b>MIO</b>.',
@@ -530,6 +531,20 @@ const PK_TXT = {
   huella: { name: 'Huella', enter: 'Entrar con tu huella', on: 'Activar huella', title: '¿Entrar con tu huella la próxima vez?', use: 'Pon tu dedo en el lector para entrar.', ok: 'Huella activada', pay: 'Confirma con tu huella…' },
   bio: { name: 'Biometría', enter: 'Entrar con biometría', on: 'Activar biometría', title: '¿Entrar con biometría la próxima vez?', use: 'Confirma con la biometría de tu equipo.', ok: 'Biometría activada', pay: 'Confirma con tu biometría…' }
 };
+// Navegador dentro de Instagram/Facebook/TikTok o WebView de Android: ahí las passkeys del equipo no funcionan
+// (la llamada se queda colgada o falla callada), así que NUNCA se llama a navigator.credentials.
+const UA = navigator.userAgent || '';
+const IOS = /iPhone|iPad|iPod/i.test(UA);
+const ANDROID = /Android/i.test(UA);
+const INAPP = /Instagram|FBAN|FBAV|FB_IAB|FBIOS|FB4A|TikTok|musical_ly|BytedanceWebview|Snapchat|Line\/|LinkedInApp|Twitter|GSA\//i.test(UA) || (ANDROID && /; wv\)/.test(UA));
+const PK_TIMEOUT = 25000;
+// Si la biometría no responde en ~25 s se toma como fallo (nunca un botón muerto)
+function withTimeout(p) {
+  return new Promise((res, rej) => {
+    const tm = setTimeout(() => { const e = new Error('tiempo agotado'); e.name = 'TimeoutError'; rej(e); }, PK_TIMEOUT);
+    Promise.resolve(p).then((v) => { clearTimeout(tm); res(v); }, (e) => { clearTimeout(tm); rej(e); });
+  });
+}
 const PK = {
   _ok: null,
   lastAt: 0,
@@ -541,12 +556,13 @@ const PK = {
     return 'bio';
   },
   t(k) { return PK_TXT[PK.kind()][k]; },
-  can() { return !!(window.PublicKeyCredential && navigator.credentials && navigator.credentials.get && window.isSecureContext !== false); },
+  inapp: INAPP,
+  can() { return !INAPP && !!(window.PublicKeyCredential && navigator.credentials && navigator.credentials.get && window.isSecureContext !== false); },
   // ¿Este equipo tiene lector biométrico? (se pregunta una sola vez)
   available() {
     if (!PK._ok) {
       PK._ok = (PK.can() && typeof PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable === 'function')
-        ? PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable().then((x) => !!x, () => false) : Promise.resolve(false);
+        ? withTimeout(PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()).then((x) => !!x, () => false) : Promise.resolve(false);
     }
     return PK._ok;
   },
@@ -563,14 +579,15 @@ const PK = {
   b64u(buf) { let s = ''; new Uint8Array(buf).forEach((b) => { s += String.fromCharCode(b); }); return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); },
   unb64u(s) { const b = atob(s.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((s.length + 3) % 4)); return Uint8Array.from(b, (c) => c.charCodeAt(0)); },
   create(phone, displayName) {
-    return navigator.credentials.create({ publicKey: {
+    if (!PK.can()) return Promise.reject(Object.assign(new Error('navegador sin passkeys'), { name: 'InAppBrowser' }));
+    return withTimeout(navigator.credentials.create({ publicKey: {
       challenge: PK.rand(32),
       rp: { name: 'Brinco', id: RP },
       user: { id: PK.rand(16), name: phone, displayName: displayName || phone },
       pubKeyCredParams: [{ type: 'public-key', alg: -7 }, { type: 'public-key', alg: -257 }],
       authenticatorSelection: { authenticatorAttachment: 'platform', userVerification: 'required', residentKey: 'preferred' },
       timeout: 60000
-    } }).then((cred) => {
+    } })).then((cred) => {
       if (!cred) throw new Error('sin credencial');
       const id = PK.b64u(cred.rawId);
       B.upsert(phone, (acc) => {
@@ -583,21 +600,27 @@ const PK = {
     });
   },
   get(d) {
-    return navigator.credentials.get({ publicKey: {
+    if (!PK.can()) return Promise.reject(Object.assign(new Error('navegador sin passkeys'), { name: 'InAppBrowser' }));
+    return withTimeout(navigator.credentials.get({ publicKey: {
       challenge: PK.rand(32),
       allowCredentials: [{ type: 'public-key', id: PK.unb64u(d.credId) }],
       userVerification: 'required', rpId: RP, timeout: 60000
-    } }).then((cred) => {
+    } })).then((cred) => {
       if (!cred || PK.b64u(cred.rawId) !== d.credId) throw new Error('no coincide');
       PK.lastAt = Date.now();
       return d.phone;
     });
   }
 };
-// Navegador dentro de Instagram/Facebook/TikTok: Apple no deja usar Face ID ahí
-const INAPP = /Instagram|FBAN|FBAV|FB_IAB|TikTok|musical_ly|BytedanceWebview|Line\//i.test(navigator.userAgent || '');
-const IOS = /iPhone|iPad|iPod/i.test(navigator.userAgent || '');
-function safariURL() { return 'x-safari-' + location.origin + location.pathname; }
+// Abrir esta misma página en Safari (iOS) o Chrome (Android) con ?bk=pk
+function outURL() {
+  const path = location.pathname + '?bk=pk';
+  if (IOS) return 'x-safari-' + location.origin + path;
+  if (ANDROID) return 'intent://' + location.host + path + '#Intent;scheme=https;package=com.android.chrome;end';
+  return location.origin + path;
+}
+const canOut = () => INAPP && (IOS || ANDROID);
+const outBrowser = () => (IOS ? 'Safari' : 'Chrome');
 // Ícono: rostro (Face ID / biometría) o huella (Android / Touch ID)
 function pkIcon(size) {
   size = size || 22;
@@ -606,6 +629,7 @@ function pkIcon(size) {
   return `<svg ${a}><path d="M4 8V6.5A2.5 2.5 0 0 1 6.5 4H8M16 4h1.5A2.5 2.5 0 0 1 20 6.5V8M20 16v1.5a2.5 2.5 0 0 1-2.5 2.5H16M8 20H6.5A2.5 2.5 0 0 1 4 17.5V16"/><path d="M9 9.2v1.4M15 9.2v1.4M12 9.2v3.6h-.9M9.6 15.6a3.4 3.4 0 0 0 4.8 0"/></svg>`;
 }
 Brinco._passkeys = PK;
+Brinco._inapp = INAPP;
 Brinco._icons.passkey = pkIcon;
 
 /* --- src/core/80-checkout.js --- */
@@ -903,8 +927,11 @@ function sendOtp(phone, next) {
 // --- Ofrecer Face ID / huella después de crear la cuenta o confirmar el WhatsApp ---
 function offerPasskey(phone, next) {
   const acc = B.accounts()[phone];
+  if (!acc || S.pkAsked[phone]) { next(); return; }
+  // Dentro de Instagram/Facebook…: se ofrece abrir en Safari/Chrome (sin llamar a WebAuthn)
+  if (INAPP) { if (canOut()) { S.pkAsked[phone] = true; VIEWS.bPasskeyOut(phone, next); } else next(); return; }
   const d = PK.device();
-  if (!acc || S.pkAsked[phone] || (d && d.phone === phone)) { next(); return; }
+  if (d && d.phone === phone) { next(); return; }
   PK.available().then((ok) => {
     if (!ok) { next(); return; }
     S.pkAsked[phone] = true;
@@ -939,6 +966,28 @@ VIEWS.bPasskey = function (phone, next) {
   });
   $('#pkSkip', body).addEventListener('click', () => next());
 };
+
+VIEWS.bPasskeyOut = function (phone, next) {
+  if (typeof next !== 'function') { VIEWS.checkout({ replace: true }); return; }
+  show('bPasskey', `
+    <div class="bk-pk-offer">
+      <span class="bk-pk-ico">${pkIcon(46)}</span>
+      <p class="bk-h3">${t('pkOutTitle', { x: PK.t('name'), b: outBrowser() })}</p>
+      <p class="bk-muted">${t('pkOutTx', { app: inAppName(), x: PK.t('name'), b: outBrowser() })}</p>
+      <ul class="bk-pk-pts"><li>${ICONS.check}${t('pkPoints1')}</li><li>${ICONS.check}${t('pkPoints2')}</li></ul>
+    </div>
+    <a class="bk-pay bk-blue" id="pkOut" href="${esc(outURL())}">${pkIcon(22)}${t('openIn', { b: outBrowser() })}</a>
+    <button class="bk-link" type="button" id="pkSkip">${t('notNow')}</button>`, { brinco: true, root: true });
+  $('#pkOut', body).addEventListener('click', () => { track('passkey_safari', { app: inAppName() }); setTimeout(() => { if (S.view === 'bPasskey') next(); }, 1500); });
+  $('#pkSkip', body).addEventListener('click', () => next());
+};
+function inAppName() {
+  const ua = navigator.userAgent || '';
+  if (/Instagram/i.test(ua)) return 'Instagram';
+  if (/FBAN|FBAV|FB_IAB|FBIOS|FB4A/i.test(ua)) return 'Facebook';
+  if (/TikTok|musical_ly|Bytedance/i.test(ua)) return 'TikTok';
+  return 'esta app';
+}
 
 VIEWS.bPasskeyOk = function (next) {
   if (typeof next !== 'function') { VIEWS.checkout({ replace: true }); return; }
@@ -1229,8 +1278,9 @@ VIEWS.bSummary = function (o) {
   // Sin Face ID en este equipo: ofrecer activarlo aquí mismo (o abrir en Safari si está dentro de Instagram)
   const slot = $('#pkSlot', body);
   if (slot) {
-    if (INAPP && IOS) {
-      slot.innerHTML = `<a class="bk-pk-banner" href="${safariURL()}"><span class="bk-pk-ico bk-sm">${pkIcon(22)}</span><span class="bk-pk-tx"><b>${t('safariT')}</b><span>${t('safariTx', { n: esc(C().nombre) })}</span></span><span class="bk-go">${t('open')}</span></a>`;
+    if (canOut()) {
+      slot.innerHTML = `<a class="bk-pk-banner" href="${esc(outURL())}"><span class="bk-pk-ico bk-sm">${pkIcon(22)}</span><span class="bk-pk-tx"><b>${t('safariT', { x: PK.t('name') })}</b><span>${t('safariTx', { n: esc(C().nombre), b: outBrowser(), x: PK.kind() === 'huella' ? t('yourPrint') : t('yourFace') })}</span></span><span class="bk-go">${t('open')}</span></a>`;
+      $('.bk-pk-banner', slot).addEventListener('click', () => track('passkey_safari', { app: inAppName(), desde: 'resumen' }));
     } else {
       PK.available().then((ok) => {
         if (!ok || S.view !== 'bSummary' || !document.body.contains(slot)) return;
@@ -1947,6 +1997,15 @@ function boot() {
     watchVaultFooters();
     document.documentElement.classList.add('bk-ready');
     fireReady();
+    // Llegó desde Instagram/Facebook con ?bk=pk (para activar Face ID en Safari/Chrome)
+    try {
+      const q = new URLSearchParams(location.search);
+      if (q.has('bk')) {
+        q.delete('bk');
+        history.replaceState(history.state, '', location.pathname + (q.toString() ? '?' + q : '') + location.hash);
+        if (!INAPP && B.session()) setTimeout(() => toast(t('pkHint', { x: PK.t('name') }), 5000), 600);
+      }
+    } catch (e) {}
     try { window.dispatchEvent(new CustomEvent('brinco:ready', { detail: Brinco.config })); } catch (e) {}
   });
 }
