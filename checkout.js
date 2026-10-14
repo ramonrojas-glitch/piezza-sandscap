@@ -239,6 +239,13 @@
   const badgesHTML = `<div class="badges"><img src="/images/pagos/visa.webp" alt="Visa"><img src="/images/pagos/mastercard.webp" alt="Mastercard"><img src="/images/pagos/visa-secure.webp" alt="Visa Secure"><img src="/images/pagos/mastercard-id-check.webp" alt="Mastercard ID Check"></div>`;
   const testNote = `<p class="testmode">Ambiente de pruebas de AZUL · no se realiza ningún cargo real</p>`;
 
+  // Aviso de confianza: Brinco no guarda tarjetas; las guarda el procesador (AZUL, CardNet o MIO)
+  const SHIELD = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v5c0 4.6-3 8.4-7 10-4-1.6-7-5.4-7-10V6z"/><rect x="9" y="11" width="6" height="5" rx="1"/><path d="M10.5 11V9.6a1.5 1.5 0 0 1 3 0V11"/></svg>';
+  const PROCS = '<span class="vault-procs" aria-label="Procesadores: AZUL, CardNet y MIO"><i>AZUL</i><i>CardNet</i><i>MIO</i></span>';
+  function vaultHTML(compact) {
+    if (compact) return `<p class="vault-line">${SHIELD}<span>Brinco <b>no guarda</b> tu tarjeta. La protegen <b>AZUL</b>, <b>CardNet</b> o <b>MIO</b>.</span></p>`;
+    return `<div class="vault"><span class="vault-ic">${SHIELD}</span><div class="vault-tx"><b>Brinco no guarda tu tarjeta</b><span>Tu tarjeta queda guardada y protegida por el procesador de pago certificado PCI DSS. Brinco solo recibe un código seguro (token) que no sirve fuera de tu cuenta.</span>${PROCS}</div></div>`;
+  }
   function azulHTML(prefix) {
     return `<div class="azul" id="${prefix}Azul">
       <div class="azul-top"><span style="display:flex;align-items:center;gap:6px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>Campos seguros de <b>AZUL</b></span><span>Cifrado TLS · PCI DSS</span></div>
@@ -288,6 +295,7 @@
     const t = totals();
     show('checkout', `
       <button class="brinco-btn${card ? ' has-card' : ''}" type="button" id="bPayBtn"><span class="bl">Pagar con <span class="bw">brinco</span></span>${card ? `<span class="bc">${brandName(card.brand)} •••• ${card.last4}</span>` : ''}</button>
+      ${vaultHTML(true)}
       <div class="co-or">o paga con tarjeta</div>
       <div class="co-sec"><h3>¿Cómo lo quieres?</h3>
         <div class="seg" role="group" aria-label="Entrega">
@@ -306,7 +314,7 @@
         </div>
       </div>
       <div class="co-sec"><h3>Pago</h3>${azulHTML('c')}</div>
-      <label class="chk"><input type="checkbox" id="coSave"><span>Guardar mis datos y mi tarjeta en <span class="brinco-word">brinco</span> para pagar con un toque en cualquier negocio Brinco<small>Te enviamos un código por WhatsApp para confirmar. Brinco no ve el número de tu tarjeta; lo guarda AZUL.</small></span></label>
+      <label class="chk"><input type="checkbox" id="coSave"><span>Guardar mis datos y mi tarjeta en <span class="brinco-word">brinco</span> para pagar con un toque en cualquier negocio Brinco<small>Te enviamos un código por WhatsApp para confirmar. Brinco no guarda tu tarjeta: la guarda tu procesador de pago (AZUL, CardNet o MIO).</small></span></label>
       <div id="coSum">${sumHTML()}</div>
       <button class="pay" type="button" id="coPay"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>Pagar ${fmt(t.total)}</button>
       ${testNote}${badgesHTML}`, { root: true, replace: o.replace });
@@ -530,7 +538,7 @@
       B.upsert(p.phone, (acc) => {
         acc = acc || { phone: p.phone, name: p.name, email: '', addresses: [], cards: [], createdAt: Date.now(), merchants: [] };
         B.consent(acc, 'cuenta', 'Guardar mis datos en Brinco para pagar con un toque en cualquier negocio Brinco');
-        B.consent(acc, 'guardar_tarjeta', 'Guardar esta tarjeta para mis compras en negocios Brinco. Brinco no ve el número; lo guarda AZUL.');
+        B.consent(acc, 'guardar_tarjeta', 'Guardar esta tarjeta para mis compras en negocios Brinco. Brinco no guarda tu tarjeta: la guarda tu procesador de pago (AZUL, CardNet o MIO).');
         if (p.address && !acc.addresses.some((a) => a.street === p.address.street)) acc.addresses.push(Object.assign({ id: Date.now(), main: !acc.addresses.length }, p.address));
         if (!acc.cards.some((c) => c.last4 === p.card.last4 && c.brand === p.card.brand)) acc.cards.forEach((c) => { c.main = false; }), acc.cards.push({ id: Date.now(), brand: p.card.brand, last4: p.card.last4, exp: p.card.exp, processor: 'azul', main: true });
         return acc;
@@ -565,7 +573,7 @@
         <div style="display:flex;justify-content:space-between;font-weight:700;font-size:16px;border-top:1px solid #F0E6E2;padding-top:8px"><span>Total pagado</span><span>${fmt(o.total)}</span></div>
         <div style="color:#6E625D;font-size:13px">${o.via === 'brinco' ? 'Pagado con Brinco · ' : ''}${brandName(o.card.brand)} •••• ${o.card.last4} · Autorización ${o.auth}${o.address ? '<br>Entrega: ' + esc(o.address.street) + ', ' + esc(o.address.sector) : ''}</div>
       </div>
-      ${o.brincoNew ? `<div class="brinco-ok"><span class="brinco-word" style="font-size:18px">brinco</span><br><b>Tu Cuenta Brinco quedó lista.</b> La próxima vez pagas con un toque aquí y en cualquier negocio Brinco.</div>` : ''}
+      ${o.brincoNew ? `<div class="brinco-ok"><span class="brinco-word" style="font-size:18px">brinco</span><br><b>Tu Cuenta Brinco quedó lista.</b> La próxima vez pagas con un toque aquí y en cualquier negocio Brinco. Tu tarjeta no la guarda Brinco: queda protegida por tu procesador de pago.</div>` : ''}
       <button class="linkbtn" type="button" data-x>Seguir comprando</button>
       ${badgesHTML}</div>`, { root: true, replace: true, title: 'Listo', brinco: false });
     if (window.PZPill) window.PZPill();
@@ -595,6 +603,7 @@
       ${d ? `<button class="pay blue" type="button" id="bPk">${pkIcon(22)}${PK.t('enter')}</button><div class="co-or">o con tu WhatsApp</div>` : ''}
       <div class="fld"><label for="bPhone">Número de WhatsApp</label><input id="bPhone" type="tel" inputmode="tel" autocomplete="tel-national" placeholder="809-555-1234" ${d ? '' : 'autofocus'}><span class="err">Escribe tu número de WhatsApp.</span></div>
       <button class="pay ${d ? 'ghost' : 'blue'}" type="button" id="bSend">Enviar código por WhatsApp</button>
+      ${vaultHTML(false)}
       <p class="muted center" style="font-size:12px">Al continuar aceptas los Términos de la Cuenta Brinco y su Política de privacidad. Nunca usamos SMS.</p>`, { brinco: true, replace: o.replace });
     const ph = $('#bPhone', body);
     if (o.phone) ph.value = fmtPhone(o.phone);
@@ -662,9 +671,9 @@
   VIEWS.bCard = function () {
     show('bCard', `
       <p class="h3">Agrega tu tarjeta</p>
-      <p class="muted">La tarjeta va directo a AZUL. Brinco solo guarda un token con la marca y los últimos 4 dígitos.</p>
+      ${vaultHTML(false)}
       ${azulHTML('b')}
-      <label class="chk"><input type="checkbox" id="bCardConsent"><span>Guardar esta tarjeta para mis compras en negocios Brinco<small>Brinco no ve el número; lo guarda AZUL.</small></span></label>
+      <label class="chk"><input type="checkbox" id="bCardConsent"><span>Guardar esta tarjeta para mis compras en negocios Brinco<small>Brinco no guarda tu tarjeta: la guarda tu procesador de pago (AZUL, CardNet o MIO).</small></span></label>
       <p class="muted" id="bCardErr" style="color:#C62828;font-size:13px" hidden>Marca la casilla para guardar la tarjeta.</p>
       <button class="pay blue" type="button" id="bSaveCard">Guardar tarjeta</button>
       ${testNote}${badgesHTML}`, { brinco: true });
@@ -678,7 +687,7 @@
       $('#coBack', root).hidden = true;
       setTimeout(() => {
         B.upsert(B.session().phone, (acc) => {
-          B.consent(acc, 'guardar_tarjeta', 'Guardar esta tarjeta para mis compras en negocios Brinco. Brinco no ve el número; lo guarda AZUL.');
+          B.consent(acc, 'guardar_tarjeta', 'Guardar esta tarjeta para mis compras en negocios Brinco. Brinco no guarda tu tarjeta: la guarda tu procesador de pago (AZUL, CardNet o MIO).');
           acc.cards.forEach((x) => { x.main = false; });
           acc.cards.push({ id: Date.now(), brand: card.brand, last4: card.last4, exp: card.exp, processor: 'azul', main: true, declineCode: card.declineCode });
           return acc;
@@ -711,6 +720,7 @@
       <div class="co-sec"><h3 style="color:#1F4FFF">Tarjeta</h3>
         ${cards.map((c) => `<button type="button" class="opt" role="radio" data-card="${c.id}" aria-checked="${S.bCard === c.id}"><span class="dot"></span>${BRAND_IMG[c.brand] ? `<img src="${BRAND_IMG[c.brand]}" alt="">` : ''}<span class="tx"><b>${brandName(c.brand)} •••• ${c.last4}</b><span>Vence ${esc(c.exp)}${c.main ? ' · principal' : ''}</span></span></button>`).join('')}
         <button class="linkbtn" type="button" id="bAddCard" style="align-self:flex-start;padding:6px 0">+ Agregar otra tarjeta</button>
+        ${vaultHTML(true)}
       </div>
       ${!pk ? '<div id="pkSlot"></div>' : ''}
       ${sumHTML(mode)}
