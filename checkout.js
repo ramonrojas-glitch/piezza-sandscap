@@ -71,6 +71,12 @@
     upsert(phone, fn) { const a = B.accounts(); const k = phoneDigits(phone); a[k] = fn(a[k] || null); if (a[k]) a[k].touched = Date.now(); B.save(a); return a[k]; },
     consent(acc, type, text) { (acc.consents = acc.consents || []).push({ type, text, at: new Date().toISOString(), channel: 'web', v: '2026-10' }); }
   };
+  // Primera visita con la cuenta compartida: sube a la cookie lo que ya estaba guardado en este sitio
+  if (SHARED) {
+    const l0 = store.get('brinco_accounts', null), s0 = store.get('brinco_session', null);
+    if (l0 && Object.keys(l0).length && !ck.get('brinco_acc')) ck.set('brinco_acc', slim(l0));
+    if (s0 && !ck.get('brinco_s')) ck.set('brinco_s', s0);
+  }
 
   // ---------- Passkeys: Face ID / huella (WebAuthn real; demo sin servidor, no se verifican firmas) ----------
   // En este equipo se guarda solo { phone, credId } en brinco_passkey. La biometría nunca sale del teléfono.
