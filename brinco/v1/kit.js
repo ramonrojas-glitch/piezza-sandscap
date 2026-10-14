@@ -1,10 +1,10 @@
-/*! Brinco Kit v1 · Sandscap · 2026-10-14T18:09Z */
+/*! Brinco Kit v1 · Sandscap · 2026-10-14T18:32Z */
 (function () {
 'use strict';
 
 /* --- src/core/00-base.js --- */
 /* ===== Brinco Kit · base: namespace, helpers ===== */
-const VERSION = '1.0.0';
+const VERSION = '1.1.0';
 const SCRIPT = document.currentScript || (function () {
   const s = document.querySelectorAll('script[src*="kit.js"]'); return s[s.length - 1] || null;
 })();
@@ -16,7 +16,7 @@ const $ = (s, r) => (r || document).querySelector(s);
 const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const digits = (s) => String(s || '').replace(/\D/g, '');
-const hhmm = (t) => { const d = new Date(t); return d.toLocaleTimeString('es-DO', { hour: 'numeric', minute: '2-digit' }); };
+const hhmm = (ms) => new Date(ms).toLocaleTimeString(Brinco._loc ? Brinco._loc() : 'es-DO', { hour: 'numeric', minute: '2-digit' });
 // Acepta el número como lo escriban (con o sin +1, guiones o espacios)
 const phoneDigits = (s) => { let d = digits(s); if (d.length === 11 && d[0] === '1') d = d.slice(1); return d.slice(0, 15); };
 const fmtPhone = (s) => { const d = phoneDigits(s); if (d.length > 10) return d; return d.length > 6 ? d.slice(0, 3) + '-' + d.slice(3, 6) + '-' + d.slice(6) : d.length > 3 ? d.slice(0, 3) + '-' + d.slice(3) : d; };
@@ -72,7 +72,8 @@ Brinco._store = store;
 })();
 
 /* --- src/core/20-i18n.js --- */
-/* ===== Brinco Kit · textos (un solo objeto; "es" completo, "en" parcial con respaldo en español) ===== */
+/* ===== Brinco Kit · textos (un solo objeto; español por defecto, inglés completo) =====
+   Claves sin prefijo: caja y Brinco. p_: /pedido/. pn_: /panel/. pill_: píldora. hd_: encabezado/pie. Las páginas legales tienen su propio texto en inglés en legal.js. */
 const STR = {
   es: {
     title: 'Finalizar pedido', back: 'Volver', close: 'Cerrar', with: 'con',
@@ -82,25 +83,28 @@ const STR = {
     sector: 'Sector', choose: 'Escoge…', sectorErr: 'Escoge el sector.', ref: 'Referencia', refPh: 'Frente a…', payment: 'Pago',
     saveBrinco: 'Guardar mis datos y mi tarjeta en {brinco} para pagar con un toque en cualquier negocio Brinco',
     saveBrincoSmall: 'Te enviamos un código por WhatsApp para confirmar. Brinco no guarda tu tarjeta: la guarda tu procesador de pago (AZUL, CardNet o MIO).',
-    pay: 'Pagar', subtotal: 'Subtotal', ship: 'Envío', total: 'Total', itbis: 'ITBIS incluido', coupon: 'Cupón',
+    pay: 'Pagar', subtotal: 'Subtotal', ship: 'Envío', total: 'Total', itbis: 'ITBIS incluido', itbisLine: 'ITBIS ({p}%)', coupon: 'Cupón', apply: 'Aplicar', couponErr: 'Ese cupón no es válido.',
+    freeFrom: 'Envío gratis desde {x}', freeLeft: 'Te faltan {x} para envío gratis', freeOk: '¡Tu envío es gratis!',
+    store: 'Tienda', storeChoose: '¿En cuál tienda lo recoges?',
+    when: '¿Para cuándo?', day: 'Día', hour: 'Hora', scheduledFor: 'Programado para {x}', today: 'Hoy', tomorrow: 'Mañana', noSlots: 'No hay horarios disponibles en los próximos días.',
     testMode: 'Ambiente de pruebas de AZUL · no se realiza ningún cargo real',
     azulTop: 'Campos seguros de', azulSec: 'Cifrado TLS · PCI DSS', cardNum: 'Número de tarjeta', cardNumErr: 'Revisa el número de la tarjeta.',
-    exp: 'Vence (MM/AA)', expErr: 'Fecha no válida.', cvv: 'CVV', cvvErr: '3 o 4 dígitos.', holder: 'Nombre en la tarjeta', holderPh: 'Como aparece en la tarjeta', holderErr: 'Escribe el nombre.',
+    exp: 'Vence (MM/AA)', expPh: 'MM/AA', expErr: 'Fecha no válida.', cvv: 'CVV', cvvErr: '3 o 4 dígitos.', holder: 'Nombre en la tarjeta', holderPh: 'Como aparece en la tarjeta', holderErr: 'Escribe el nombre.',
     testCards: 'Tarjetas de prueba:', approved: 'aprobada', declined: 'rechazada',
     otpTitle: 'Confirma tu WhatsApp', otpSent: 'Te enviamos un código de 6 dígitos al {phone}.', otpGo: 'Confirmar código', otpAgain: 'Enviar otro código',
-    otpBad: 'Código incorrecto. Revisa el mensaje de WhatsApp.', otpMany: 'Demasiados intentos. Pide otro código.',
+    otpBad: 'Código incorrecto. Revisa el mensaje de WhatsApp.', otpMany: 'Demasiados intentos. Pide otro código.', digit: 'Dígito {n}',
     otpMsg: 'Tu código de Brinco es {code}. Vence en 10 minutos. No lo compartas con nadie.', now: 'ahora',
-    verifyBank: 'Verificando con tu banco', noClose: 'No cierres esta ventana.', processing: 'Procesando tu pago', verifyCard: 'Verificando tu tarjeta',
+    verifyBank: 'Verificando con tu banco', noClose: 'No cierres esta ventana.', processing: 'Procesando tu pago', verifyCard: 'Verificando tu tarjeta', processingAria: 'Procesando',
     done: '¡Pedido confirmado!', order: 'Orden', arrives: 'Llega en {a}–{b} min', ready: 'Listo para recoger en {a} min',
     doneWa: 'Te avisamos por WhatsApp al {phone} en cada paso, con el link para seguirlo.', follow: 'Seguir mi pedido',
-    paid: 'Total pagado', paidBrinco: 'Pagado con Brinco · ', auth: 'Autorización', deliverTo: 'Entrega', keepShopping: 'Seguir comprando',
+    paid: 'Total pagado', paidBrinco: 'Pagado con Brinco · ', auth: 'Autorización', deliverTo: 'Entrega', pickAt: 'Recoger en', keepShopping: 'Seguir comprando',
     brincoReady: 'Tu Cuenta Brinco quedó lista.', brincoReadyTx: 'La próxima vez pagas con un toque aquí y en cualquier negocio Brinco. Tu tarjeta no la guarda Brinco: queda protegida por tu procesador de pago.',
     doneTitle: 'Listo',
     bTagline: 'Paga con un toque', bLoginTx: 'Entra con tu número de WhatsApp. Sin contraseñas: te mandamos un código.', bLoginPk: 'Entra con {x} o con tu número de WhatsApp.',
     orWa: 'o con tu WhatsApp', waNumber: 'Número de WhatsApp', sendCode: 'Enviar código por WhatsApp',
     bTerms: 'Al continuar aceptas los Términos de la Cuenta Brinco y su Política de privacidad. Nunca usamos SMS.',
     bCreate: 'Crea tu Cuenta Brinco', bCreateTx: 'Una sola vez. Después pagas con un toque en cualquier negocio Brinco.',
-    email: 'Correo', optional: '(opcional)', emailErr: 'Correo no válido.', addrTitle: 'Dirección de entrega', home: 'Casa', work: 'Trabajo',
+    email: 'Correo', optional: '(opcional)', emailErr: 'Correo no válido.', addrTitle: 'Dirección de entrega', home: 'Casa', work: 'Trabajo', label: 'Etiqueta',
     consent: 'Guardar mis datos en {brinco} para pagar con un toque en cualquier negocio Brinco', consentSmall: 'Puedes borrarlos cuando quieras desde Mi cuenta.',
     consentErr: 'Marca la casilla para crear tu cuenta.', continue: 'Continuar',
     addCard: 'Agrega tu tarjeta', cardConsent: 'Guardar esta tarjeta para mis compras en negocios Brinco', cardConsentSmall: 'Brinco no guarda tu tarjeta: la guarda tu procesador de pago (AZUL, CardNet o MIO).',
@@ -110,33 +114,180 @@ const STR = {
     pkPoints1: 'Entras y pagas en un segundo', pkPoints2: 'Sin códigos ni contraseñas', pkBio: 'Usa la huella o el rostro de tu celular. Tu biometría nunca sale de tu teléfono.',
     notNow: 'Ahora no', pkNext: 'La próxima vez entras y pagas con {x}.', aLook: 'una mirada', aTouch: 'un toque',
     pkConfirm: 'Confirma que eres tú', pkFail: 'No se activó, puedes hacerlo luego', useWa: 'Usa tu número de WhatsApp',
-    pkBanner: 'Paga con {x}, sin códigos', activate: 'Activar', safariT: 'Paga con {x}', safariTx: 'Abre {n} en {b} para usar {x}', yourFace: 'tu rostro', yourPrint: 'tu huella',
-    pkOutTitle: 'Activa {x} en {b}', pkOutTx: 'El navegador de {app} no permite usar {x}. Ábrelo en {b} y actívalo en un toque.', openIn: 'Abrir en {b}', pkHint: 'Toca Pagar con Brinco y activa {x}', open: 'Abrir',
+    pkBanner: 'Paga con {x}, sin códigos', activate: 'Activar',
+   
     vaultLine: 'Brinco <b>no guarda</b> tu tarjeta. La protegen <b>AZUL</b>, <b>CardNet</b> o <b>MIO</b>.',
     vaultT: 'Brinco no guarda tu tarjeta', vaultTx: 'Tu tarjeta queda guardada y protegida por el procesador de pago certificado PCI DSS. Brinco solo recibe un código seguro (token) que no sirve fuera de tu cuenta.',
     vaultFooter: '<b>Brinco no guarda tarjetas.</b> Tus datos de pago quedan protegidos por el procesador certificado PCI DSS: <b>AZUL</b>, <b>CardNet</b> o <b>MIO</b>.',
+    vaultProcs: 'Procesadores: AZUL, CardNet y MIO',
     d51: 'Fondos insuficientes. Intenta con otra tarjeta.', d05: 'El banco no autorizó la transacción. Contacta a tu banco o usa otra tarjeta.', d54: 'La tarjeta está vencida.',
-    code: 'código', emptyCart: 'Tu carrito está vacío.', defaultClient: 'Cliente'
+    code: 'código', emptyCart: 'Tu carrito está vacío.', defaultClient: 'Cliente', card: 'Tarjeta',
+    // Passkeys
+    pk_faceid_name: 'Face ID', pk_faceid_enter: 'Entrar con Face ID', pk_faceid_on: 'Activar Face ID', pk_faceid_title: '¿Entrar con Face ID la próxima vez?', pk_faceid_use: 'Mira tu celular para entrar con Face ID.', pk_faceid_ok: 'Face ID activado', pk_faceid_pay: 'Confirma con Face ID…',
+    pk_touchid_name: 'Touch ID', pk_touchid_enter: 'Entrar con Touch ID', pk_touchid_on: 'Activar Touch ID', pk_touchid_title: '¿Entrar con Touch ID la próxima vez?', pk_touchid_use: 'Pon tu dedo en Touch ID para entrar.', pk_touchid_ok: 'Touch ID activado', pk_touchid_pay: 'Confirma con Touch ID…',
+    pk_huella_name: 'Huella', pk_huella_enter: 'Entrar con tu huella', pk_huella_on: 'Activar huella', pk_huella_title: '¿Entrar con tu huella la próxima vez?', pk_huella_use: 'Pon tu dedo en el lector para entrar.', pk_huella_ok: 'Huella activada', pk_huella_pay: 'Confirma con tu huella…',
+    pk_bio_name: 'Biometría', pk_bio_enter: 'Entrar con biometría', pk_bio_on: 'Activar biometría', pk_bio_title: '¿Entrar con biometría la próxima vez?', pk_bio_use: 'Confirma con la biometría de tu equipo.', pk_bio_ok: 'Biometría activada', pk_bio_pay: 'Confirma con tu biometría…',
+    pk_enterWord: 'Entrar con ',
+    // Etapas por defecto ({s} = producto en singular)
+    st_programado: 'Programado', st_programadoTexto: 'Lo preparamos a tiempo para tu hora.', st_programadoWa: 'Recibimos tu pedido {no} programado. ¡Gracias!',
+    st_recibido: 'Pedido recibido', st_recibidoTexto: 'Ya lo tenemos. Lo estamos revisando.', st_recibidoWa: 'Recibimos tu pedido {no}. ¡Gracias!',
+    st_preparando: 'Preparando tu {s}', st_preparandoTexto: 'Lo estamos preparando al momento, con cariño.', st_preparandoWa: 'Tu {s} ya se está preparando 👨‍🍳',
+    st_coccion: 'Casi listo', st_coccionTexto: 'Dando los últimos toques. Ya casi.', st_coccionWa: 'Tu {s} está casi listo 🔥',
+    st_camino: 'En camino', st_caminoTexto: 'Tu rider va directo a tu casa.', st_caminoWa: '¡Tu pedido va en camino! 🛵 Síguelo aquí: {dominio}/pedido',
+    st_entregado: 'Entregado', st_entregadoTexto: '¡Buen provecho! Gracias por pedir directo.', st_entregadoWa: 'Pedido entregado. ¡Buen provecho! ❤️',
+    st_lista: 'Listo para recoger', st_listaTexto: 'Te esperamos en la tienda. Di tu número de orden.', st_listaWa: '¡Tu pedido está listo para recoger! Orden {no}',
+    st_recogido: 'Recogido', st_recogidoTexto: '¡Buen provecho! Gracias por pedir directo.', st_recogidoWa: 'Pedido recogido. ¡Buen provecho! ❤️',
+    // Encabezado / pie de las páginas del kit
+    hd_home: 'inicio', hd_legal: 'Legal', hd_sec: 'Políticas de seguridad', hd_priv: 'Privacidad', hd_terms: 'Términos y entregas', hd_back: 'Volver a la tienda',
+    hd_vault: 'Brinco no guarda tarjetas: las protege tu procesador de pago (AZUL, CardNet o MIO).',
+    // Píldora
+    pill_your: 'Tu pedido ', pill_see: 'Ver', pill_aria: 'Tu pedido {no}{st}. Ver pedido',
+    pill_recibido: 'Recibido', pill_preparando: 'Preparando', pill_coccion: 'Preparando', pill_camino: 'En camino', pill_entregado: 'Entregado', pill_lista: 'Lista', pill_recogido: 'Entregado', pill_programado: 'Programado',
+    // /pedido/
+    p_orderAgain: 'Pedir de nuevo', p_order: 'Pedido {no}', p_track: 'Sigue tu pedido', p_trackSub: 'Mira en qué va tu pedido, en vivo.', p_your: 'Tu pedido',
+    p_madeAt: 'Hecho a las {h}', p_inProc: 'En proceso', p_delivered: 'Entregado', p_picked: 'Recogido', p_scheduled: 'Programado',
+    p_readyAt: 'Lista aprox. {h}', p_arrives: 'Llega entre {a} y {b}', p_where: 'Dónde recoger', p_rider: 'Tu rider', p_detail: 'Detalle',
+    p_store: 'Nuestra tienda', p_readyIn: 'Lista en {a} min', p_dir: 'Cómo llegar', p_call: 'Llamar a {n}', p_waTo: 'Escribir por WhatsApp a {n}',
+    p_wait: 'Te asignamos un rider en cuanto tu pedido {x}.', p_waitReady: 'esté listo', p_waitOut: 'salga {x}',
+    p_discount: 'Descuento', p_total: 'Total pagado', p_paidB: 'Pagado con Brinco · ', p_auth: 'Autorización', p_deliver: 'Entrega', p_wa: 'WhatsApp',
+    p_mine: 'Mis pedidos', p_help: '¿Algún problema?', p_calling: 'Llamando a {n}…', p_chat: 'Abriendo chat con {n}…', p_helpMsg: 'Te escribimos por WhatsApp en un momento',
+    p_none: 'Todavía no tienes pedidos en este celular.', p_find: 'Buscar un pedido', p_no: 'Número de orden', p_ph: 'Tu WhatsApp', p_see: 'Ver mi pedido', p_make: 'Hacer un pedido',
+    p_notFound: 'No encontramos ese pedido. Revisa el número de orden que te llegó por WhatsApp.', p_notHere: 'No encontramos ese pedido en este celular.', p_loadErr: 'No pudimos cargar tus pedidos. Recarga la página.',
+    p_mapStore: 'Ubicación de la tienda', p_mapRoute: 'Ruta de tu pedido', p_yourStore: 'Tu tienda',
+    // /panel/
+    pn_h1: 'Ventas y origen de clientes', pn_sub: 'De dónde llegan los clientes de {n}, cuántos compran y cuánto vende cada canal, orgánico y pagado.',
+    pn_period: 'Periodo', pn_today: 'Hoy', pn_7: '7 días', pn_30: '30 días', pn_all: 'Todo', pn_summary: 'Resumen',
+    pn_clicks: 'Clics en links', pn_visits: 'Visitas', pn_buys: 'Compras', pn_rev: 'Ventas', pn_funnel: 'Embudo de compra', pn_org: 'Orgánico', pn_paidAds: 'Pagado (anuncios)', pn_paid: 'Pagado',
+    pn_people: 'Cada paso cuenta personas (sesiones únicas), no clics repetidos.', pn_split: 'Orgánico vs. pagado', pn_bySrc: 'Por origen', pn_src: 'Origen', pn_type: 'Tipo', pn_cart: 'Carrito', pn_pay: 'Pago', pn_conv: 'Conversión',
+    pn_last: 'Últimos pedidos', pn_order: 'Orden', pn_date: 'Fecha', pn_client: 'Cliente', pn_deliv: 'Entrega', pn_tot: 'Total', pn_links: 'Tus links',
+    pn_foot: 'Cada visita queda marcada con el link por donde entró, y cada pedido pagado guarda ese origen. Datos de este equipo.',
+    pn_l_ig: 'Bio de Instagram · orgánico', pn_l_ad: 'Anuncios de Meta · pagado', pn_l_fb: 'Perfil de Facebook · orgánico', pn_l_tt: 'Bio de TikTok · orgánico', pn_l_wa: 'Estados y chats de WhatsApp · orgánico',
+    pn_clicksS: '{o} orgánicos · {p} pagados', pn_noClicks: 'Aún sin clics', pn_srcs: '{n} orígenes distintos', pn_convX: 'Conversión {x}', pn_aov: 'Ticket promedio {x}',
+    pn_f1: 'Visitas', pn_f2: 'Agregaron al carrito', pn_f3: 'Abrieron el pago', pn_f4: 'Enviaron el pago', pn_f5: 'Compraron', pn_fAria: '{s}: {o} orgánico, {p} pagado',
+    pn_vb: '{v} visitas · {b} compras', pn_brinco: '<b>{x}</b> de las compras se pagaron con un toque en Brinco · {n} cuenta(s) Brinco nueva(s)',
+    pn_pkT: 'Face ID / huella', pn_pk: '<b>{a}</b> activado(s){k} · <b>{l}</b> entrada(s) o pago(s) con un toque · {f} cancelado(s)', pn_here: 'Este equipo: ', pn_hereOn: 'Face ID activo para {x}', pn_hereOff: 'sin Face ID',
+    pn_noVisits: 'Todavía no hay visitas en este periodo.', pn_noOrders: 'Todavía no hay pedidos en este periodo.', pn_pickup: 'Recoger', pn_direct: 'Directo',
+    pn_refresh: 'Actualizar', pn_shop: 'Ver tienda', pn_reset: 'Borrar datos', pn_updated: 'Panel actualizado', pn_wiped: 'Datos borrados',
+    pn_confirm: '¿Borrar las estadísticas, pedidos y cuentas Brinco guardados en este equipo?', pn_title: 'Panel {n} · Ventas y origen'
   },
   en: {
-    title: 'Checkout', back: 'Back', close: 'Close', with: 'with', payBrinco: 'Pay with', orCard: 'or pay by card', howTitle: 'How do you want it?',
-    pickup: 'Store pickup', free: 'Free', yourData: 'Your details', name: 'Name', namePh: 'Your name', street: 'Address', payment: 'Payment',
-    pay: 'Pay', ship: 'Delivery', itbis: 'Taxes included', done: 'Order confirmed!', order: 'Order', follow: 'Track my order', keepShopping: 'Keep shopping',
-    arrives: 'Arrives in {a}–{b} min', ready: 'Ready for pickup in {a} min', paid: 'Total paid', doneTitle: 'Done'
+    title: 'Checkout', back: 'Back', close: 'Close', with: 'with',
+    payBrinco: 'Pay with', orCard: 'or pay by card', howTitle: 'How do you want it?', delivery: 'Delivery', pickup: 'Store pickup',
+    free: 'Free', min: 'min', yourData: 'Your details', name: 'Name', namePh: 'Your name', nameErr: 'Enter your name.',
+    wa: 'WhatsApp', waErr: 'Enter your WhatsApp number.', street: 'Address', streetPh: 'Street, number, building, apt.', streetErr: 'Enter the address.',
+    sector: 'Neighborhood', choose: 'Choose…', sectorErr: 'Choose the neighborhood.', ref: 'Landmark', refPh: 'Across from…', payment: 'Payment',
+    saveBrinco: 'Save my details and card in {brinco} to pay with one tap at any Brinco business',
+    saveBrincoSmall: 'We will send you a WhatsApp code to confirm. Brinco does not store your card: your payment processor (AZUL, CardNet or MIO) does.',
+    pay: 'Pay', subtotal: 'Subtotal', ship: 'Delivery', total: 'Total', itbis: 'ITBIS (tax) included', itbisLine: 'ITBIS tax ({p}%)', coupon: 'Coupon', apply: 'Apply', couponErr: 'That coupon is not valid.',
+    freeFrom: 'Free delivery from {x}', freeLeft: '{x} more for free delivery', freeOk: 'Your delivery is free!',
+    store: 'Store', storeChoose: 'Which store will you pick up from?',
+    when: 'When do you want it?', day: 'Day', hour: 'Time', scheduledFor: 'Scheduled for {x}', today: 'Today', tomorrow: 'Tomorrow', noSlots: 'No times available in the next few days.',
+    testMode: 'AZUL test environment · no real charge is made',
+    azulTop: 'Secure fields by', azulSec: 'TLS encryption · PCI DSS', cardNum: 'Card number', cardNumErr: 'Check the card number.',
+    exp: 'Expires (MM/YY)', expPh: 'MM/YY', expErr: 'Invalid date.', cvv: 'CVV', cvvErr: '3 or 4 digits.', holder: 'Name on card', holderPh: 'As it appears on the card', holderErr: 'Enter the name.',
+    testCards: 'Test cards:', approved: 'approved', declined: 'declined',
+    otpTitle: 'Confirm your WhatsApp', otpSent: 'We sent a 6-digit code to {phone}.', otpGo: 'Confirm code', otpAgain: 'Send another code',
+    otpBad: 'Wrong code. Check the WhatsApp message.', otpMany: 'Too many attempts. Request a new code.', digit: 'Digit {n}',
+    otpMsg: 'Your Brinco code is {code}. It expires in 10 minutes. Do not share it with anyone.', now: 'now',
+    verifyBank: 'Verifying with your bank', noClose: 'Do not close this window.', processing: 'Processing your payment', verifyCard: 'Verifying your card', processingAria: 'Processing',
+    done: 'Order confirmed!', order: 'Order', arrives: 'Arrives in {a}–{b} min', ready: 'Ready for pickup in {a} min',
+    doneWa: 'We will update you on WhatsApp at {phone} at every step, with a link to track it.', follow: 'Track my order',
+    paid: 'Total paid', paidBrinco: 'Paid with Brinco · ', auth: 'Authorization', deliverTo: 'Delivery to', pickAt: 'Pick up at', keepShopping: 'Keep shopping',
+    brincoReady: 'Your Brinco Account is ready.', brincoReadyTx: 'Next time you pay with one tap here and at any Brinco business. Brinco does not store your card: your payment processor protects it.',
+    doneTitle: 'Done',
+    bTagline: 'Pay with one tap', bLoginTx: 'Sign in with your WhatsApp number. No passwords: we send you a code.', bLoginPk: 'Sign in with {x} or with your WhatsApp number.',
+    orWa: 'or with your WhatsApp', waNumber: 'WhatsApp number', sendCode: 'Send code on WhatsApp',
+    bTerms: 'By continuing you accept the Brinco Account Terms and Privacy Policy. We never use SMS.',
+    bCreate: 'Create your Brinco Account', bCreateTx: 'Just once. Then you pay with one tap at any Brinco business.',
+    email: 'Email', optional: '(optional)', emailErr: 'Invalid email.', addrTitle: 'Delivery address', home: 'Home', work: 'Work', label: 'Label',
+    consent: 'Save my details in {brinco} to pay with one tap at any Brinco business', consentSmall: 'You can delete them anytime from My account.',
+    consentErr: 'Check the box to create your account.', continue: 'Continue',
+    addCard: 'Add your card', cardConsent: 'Save this card for my purchases at Brinco businesses', cardConsentSmall: 'Brinco does not store your card: your payment processor (AZUL, CardNet or MIO) does.',
+    cardConsentErr: 'Check the box to save the card.', saveCard: 'Save card',
+    hello: 'Hi, {name}', again: 'again', delivTitle: 'Delivery', cardTitle: 'Card', readyIn: 'Ready in {a} min', expires: 'Expires {exp}', main: 'main',
+    addOther: '+ Add another card', confirmPay: 'Confirm and pay {total}', notYou: 'Not {name}? Sign out',
+    pkPoints1: 'Sign in and pay in a second', pkPoints2: 'No codes or passwords', pkBio: 'Use your phone’s fingerprint or face. Your biometrics never leave your phone.',
+    notNow: 'Not now', pkNext: 'Next time you sign in and pay with {x}.', aLook: 'a glance', aTouch: 'a tap',
+    pkConfirm: 'Confirm it’s you', pkFail: 'It wasn’t activated, you can do it later', useWa: 'Use your WhatsApp number',
+    pkBanner: 'Pay with {x}, no codes', activate: 'Activate',
+   
+    vaultLine: 'Brinco <b>does not store</b> your card. It is protected by <b>AZUL</b>, <b>CardNet</b> or <b>MIO</b>.',
+    vaultT: 'Brinco does not store your card', vaultTx: 'Your card is stored and protected by the PCI DSS–certified payment processor. Brinco only receives a secure code (token) that is useless outside your account.',
+    vaultFooter: '<b>Brinco does not store cards.</b> Your payment details are protected by the PCI DSS–certified processor: <b>AZUL</b>, <b>CardNet</b> or <b>MIO</b>.',
+    vaultProcs: 'Processors: AZUL, CardNet and MIO',
+    d51: 'Insufficient funds. Try another card.', d05: 'The bank did not authorize the transaction. Contact your bank or use another card.', d54: 'The card has expired.',
+    code: 'code', emptyCart: 'Your cart is empty.', defaultClient: 'Customer', card: 'Card',
+    pk_faceid_name: 'Face ID', pk_faceid_enter: 'Sign in with Face ID', pk_faceid_on: 'Turn on Face ID', pk_faceid_title: 'Sign in with Face ID next time?', pk_faceid_use: 'Look at your phone to sign in with Face ID.', pk_faceid_ok: 'Face ID is on', pk_faceid_pay: 'Confirm with Face ID…',
+    pk_touchid_name: 'Touch ID', pk_touchid_enter: 'Sign in with Touch ID', pk_touchid_on: 'Turn on Touch ID', pk_touchid_title: 'Sign in with Touch ID next time?', pk_touchid_use: 'Place your finger on Touch ID to sign in.', pk_touchid_ok: 'Touch ID is on', pk_touchid_pay: 'Confirm with Touch ID…',
+    pk_huella_name: 'Fingerprint', pk_huella_enter: 'Sign in with your fingerprint', pk_huella_on: 'Turn on fingerprint', pk_huella_title: 'Sign in with your fingerprint next time?', pk_huella_use: 'Place your finger on the sensor to sign in.', pk_huella_ok: 'Fingerprint is on', pk_huella_pay: 'Confirm with your fingerprint…',
+    pk_bio_name: 'Biometrics', pk_bio_enter: 'Sign in with biometrics', pk_bio_on: 'Turn on biometrics', pk_bio_title: 'Sign in with biometrics next time?', pk_bio_use: 'Confirm with your device’s biometrics.', pk_bio_ok: 'Biometrics is on', pk_bio_pay: 'Confirm with biometrics…',
+    pk_enterWord: 'Sign in with ',
+    st_programado: 'Scheduled', st_programadoTexto: 'We’ll have it ready on time for your slot.', st_programadoWa: 'We received your scheduled order {no}. Thank you!',
+    st_recibido: 'Order received', st_recibidoTexto: 'We’ve got it and we’re reviewing it.', st_recibidoWa: 'We received your order {no}. Thank you!',
+    st_preparando: 'Preparing your {s}', st_preparandoTexto: 'We’re making it fresh, with love.', st_preparandoWa: 'Your {s} is being prepared 👨‍🍳',
+    st_coccion: 'Almost ready', st_coccionTexto: 'Final touches. Almost there.', st_coccionWa: 'Your {s} is almost ready 🔥',
+    st_camino: 'On the way', st_caminoTexto: 'Your rider is heading straight to you.', st_caminoWa: 'Your order is on the way! 🛵 Track it here: {dominio}/pedido',
+    st_entregado: 'Delivered', st_entregadoTexto: 'Enjoy! Thanks for ordering direct.', st_entregadoWa: 'Order delivered. Enjoy! ❤️',
+    st_lista: 'Ready for pickup', st_listaTexto: 'We’re waiting for you at the store. Give your order number.', st_listaWa: 'Your order is ready for pickup! Order {no}',
+    st_recogido: 'Picked up', st_recogidoTexto: 'Enjoy! Thanks for ordering direct.', st_recogidoWa: 'Order picked up. Enjoy! ❤️',
+    hd_home: 'home', hd_legal: 'Legal', hd_sec: 'Security policy', hd_priv: 'Privacy', hd_terms: 'Terms and delivery', hd_back: 'Back to the store',
+    hd_vault: 'Brinco does not store cards: your payment processor protects them (AZUL, CardNet or MIO).',
+    pill_your: 'Your order ', pill_see: 'View', pill_aria: 'Your order {no}{st}. View order',
+    pill_recibido: 'Received', pill_preparando: 'Preparing', pill_coccion: 'Preparing', pill_camino: 'On the way', pill_entregado: 'Delivered', pill_lista: 'Ready', pill_recogido: 'Picked up', pill_programado: 'Scheduled',
+    p_orderAgain: 'Order again', p_order: 'Order {no}', p_track: 'Track your order', p_trackSub: 'See where your order is, live.', p_your: 'Your order',
+    p_madeAt: 'Placed at {h}', p_inProc: 'In progress', p_delivered: 'Delivered', p_picked: 'Picked up', p_scheduled: 'Scheduled',
+    p_readyAt: 'Ready around {h}', p_arrives: 'Arrives between {a} and {b}', p_where: 'Where to pick up', p_rider: 'Your rider', p_detail: 'Details',
+    p_store: 'Our store', p_readyIn: 'Ready in {a} min', p_dir: 'Get directions', p_call: 'Call {n}', p_waTo: 'Message {n} on WhatsApp',
+    p_wait: 'We’ll assign a rider as soon as your order {x}.', p_waitReady: 'is ready', p_waitOut: 'leaves {x}',
+    p_discount: 'Discount', p_total: 'Total paid', p_paidB: 'Paid with Brinco · ', p_auth: 'Authorization', p_deliver: 'Delivery', p_wa: 'WhatsApp',
+    p_mine: 'My orders', p_help: 'Any problem?', p_calling: 'Calling {n}…', p_chat: 'Opening chat with {n}…', p_helpMsg: 'We’ll message you on WhatsApp in a moment',
+    p_none: 'You don’t have orders on this phone yet.', p_find: 'Find an order', p_no: 'Order number', p_ph: 'Your WhatsApp', p_see: 'View my order', p_make: 'Place an order',
+    p_notFound: 'We couldn’t find that order. Check the order number we sent you on WhatsApp.', p_notHere: 'We couldn’t find that order on this phone.', p_loadErr: 'We couldn’t load your orders. Reload the page.',
+    p_mapStore: 'Store location', p_mapRoute: 'Your order’s route', p_yourStore: 'Your store',
+    pn_h1: 'Sales and customer sources', pn_sub: 'Where {n}’s customers come from, how many buy and how much each channel sells, organic and paid.',
+    pn_period: 'Period', pn_today: 'Today', pn_7: '7 days', pn_30: '30 days', pn_all: 'All', pn_summary: 'Summary',
+    pn_clicks: 'Link clicks', pn_visits: 'Visits', pn_buys: 'Purchases', pn_rev: 'Sales', pn_funnel: 'Purchase funnel', pn_org: 'Organic', pn_paidAds: 'Paid (ads)', pn_paid: 'Paid',
+    pn_people: 'Each step counts people (unique sessions), not repeated clicks.', pn_split: 'Organic vs. paid', pn_bySrc: 'By source', pn_src: 'Source', pn_type: 'Type', pn_cart: 'Cart', pn_pay: 'Payment', pn_conv: 'Conversion',
+    pn_last: 'Latest orders', pn_order: 'Order', pn_date: 'Date', pn_client: 'Customer', pn_deliv: 'Delivery', pn_tot: 'Total', pn_links: 'Your links',
+    pn_foot: 'Every visit is tagged with the link it came from, and every paid order keeps that source. Data from this device.',
+    pn_l_ig: 'Instagram bio · organic', pn_l_ad: 'Meta ads · paid', pn_l_fb: 'Facebook profile · organic', pn_l_tt: 'TikTok bio · organic', pn_l_wa: 'WhatsApp statuses and chats · organic',
+    pn_clicksS: '{o} organic · {p} paid', pn_noClicks: 'No clicks yet', pn_srcs: '{n} different sources', pn_convX: 'Conversion {x}', pn_aov: 'Average ticket {x}',
+    pn_f1: 'Visits', pn_f2: 'Added to cart', pn_f3: 'Opened checkout', pn_f4: 'Submitted payment', pn_f5: 'Purchased', pn_fAria: '{s}: {o} organic, {p} paid',
+    pn_vb: '{v} visits · {b} purchases', pn_brinco: '<b>{x}</b> of purchases were paid with one tap on Brinco · {n} new Brinco account(s)',
+    pn_pkT: 'Face ID / fingerprint', pn_pk: '<b>{a}</b> turned on{k} · <b>{l}</b> one-tap sign-in(s) or payment(s) · {f} canceled', pn_here: 'This device: ', pn_hereOn: 'Face ID on for {x}', pn_hereOff: 'no Face ID',
+    pn_noVisits: 'No visits in this period yet.', pn_noOrders: 'No orders in this period yet.', pn_pickup: 'Pickup', pn_direct: 'Direct',
+    pn_refresh: 'Refresh', pn_shop: 'View store', pn_reset: 'Delete data', pn_updated: 'Dashboard updated', pn_wiped: 'Data deleted',
+    pn_confirm: 'Delete the stats, orders and Brinco accounts saved on this device?', pn_title: '{n} dashboard · Sales and sources'
   }
 };
 let LANG = 'es';
 function t(k, v) {
-  let s = (STR[LANG] && STR[LANG][k]) || STR.es[k] || k;
+  let s = (STR[LANG] && STR[LANG][k]);
+  if (s == null) s = STR.es[k];
+  if (s == null) s = k;
   if (v) Object.keys(v).forEach((x) => { s = s.split('{' + x + '}').join(v[x]); });
   return s;
 }
-function setLang(l) { LANG = STR[l] ? l : 'es'; }
-Brinco.setLang = setLang;
+// Idioma: Brinco.setLang('en') (queda guardado en este equipo para las páginas del kit) o config.idioma
+function setLang(l, opts) {
+  LANG = STR[l] ? l : 'es';
+  if (!(opts && opts.noSave)) { try { localStorage.setItem('brinco_lang', LANG); } catch (e) {} }
+  try { window.dispatchEvent(new CustomEvent('brinco:lang', { detail: LANG })); } catch (e) {}
+}
+Brinco.setLang = (l) => setLang(l);
+Brinco.lang = () => LANG;
 Brinco._t = t;
 Brinco._strings = STR;
+const loc = () => (LANG === 'en' ? 'en-US' : 'es-DO');
+Brinco._loc = loc;
 Brinco.fmt = function (n) { return ((Brinco.config && Brinco.config.moneda) || 'RD$') + ' ' + Math.round(Number(n) || 0).toLocaleString('es-DO'); };
 const fmt = (n) => Brinco.fmt(n);
+// "mié 15 oct, 10:00 a. m." / "Wed, Oct 15, 10:00 AM"
+function fmtWhen(ms) {
+  const d = new Date(ms);
+  return d.toLocaleDateString(loc(), { weekday: 'short', day: 'numeric', month: 'short' }) + ', ' + d.toLocaleTimeString(loc(), { hour: 'numeric', minute: '2-digit' });
+}
+Brinco._fmtWhen = fmtWhen;
 
 /* --- src/core/30-config.js --- */
 /* ===== Brinco Kit · configuración (defaults + /brinco.json) ===== */
@@ -245,7 +396,10 @@ function applyConfig(c) {
   if (c.favicon && !document.querySelector('link[rel~="icon"]')) {
     const l = document.createElement('link'); l.rel = 'icon'; l.href = c.favicon; document.head.appendChild(l);
   }
-  if (c.idioma && c.idioma !== 'es') setLang(c.idioma);
+  // Idioma: lo que el cliente escogió en este equipo (Brinco.setLang) > config.idioma > <html lang="en">
+  let saved = null; try { saved = localStorage.getItem('brinco_lang'); } catch (e) {}
+  const want = saved || c.idioma || (/^en/i.test(document.documentElement.lang || '') ? 'en' : 'es');
+  setLang(want, { noSave: true });
 }
 
 const READY = { done: false, q: [] };
@@ -326,31 +480,40 @@ const track = (e, d) => Brinco.track(e, d);
 
 /* --- src/core/50-orders.js --- */
 /* ===== Brinco Kit · pedidos y su estado (demo: el tiempo corre acelerado para la presentación) ===== */
-// Etiquetas por defecto; cada negocio las cambia en brinco.json → "etapas"
-// Claves: recibido, preparando, coccion, camino, entregado, lista, recogido (+ "<clave>Texto" y "<clave>Wa")
-function etapaDefaults() {
-  const p = C().producto || {}, sing = p.singular || 'pedido';
-  return {
-    recibido: 'Pedido recibido', recibidoTexto: 'Ya lo tenemos. Lo estamos revisando.', recibidoWa: 'Recibimos tu pedido {no}. ¡Gracias!',
-    preparando: 'Preparando tu ' + sing, preparandoTexto: 'Lo estamos preparando al momento, con cariño.', preparandoWa: 'Tu ' + sing + ' ya se está preparando 👨‍🍳',
-    coccion: 'Casi listo', coccionTexto: 'Dando los últimos toques. Ya casi.', coccionWa: 'Tu ' + sing + ' está casi listo 🔥',
-    camino: 'En camino', caminoTexto: 'Tu rider va directo a tu casa.', caminoWa: '¡Tu pedido va en camino! 🛵 Síguelo aquí: {dominio}/pedido',
-    entregado: 'Entregado', entregadoTexto: '¡Buen provecho! Gracias por pedir directo.', entregadoWa: 'Pedido entregado. ¡Buen provecho! ❤️',
-    lista: 'Listo para recoger', listaTexto: 'Te esperamos en la tienda. Di tu número de orden.', listaWa: '¡Tu pedido está listo para recoger! Orden {no}',
-    recogido: 'Recogido', recogidoTexto: '¡Buen provecho! Gracias por pedir directo.', recogidoWa: 'Pedido recogido. ¡Buen provecho! ❤️'
-  };
+// Etiquetas: textos del kit (es/en) + brinco.json "etapas" (español) o "etapasEn" (inglés).
+// Claves: programado, recibido, preparando, coccion, camino, entregado, lista, recogido (+ "<clave>Texto" y "<clave>Wa")
+function etapaTexts() {
+  const c = C(), en = LANG === 'en';
+  const p = (en ? c.productoEn : null) || (en ? { singular: 'order' } : c.producto) || {};
+  const sing = p.singular || (en ? 'order' : 'pedido');
+  const o = {};
+  ['programado', 'recibido', 'preparando', 'coccion', 'camino', 'entregado', 'lista', 'recogido'].forEach((k) => {
+    ['', 'Texto', 'Wa'].forEach((x) => { o[k + x] = t('st_' + k + x, { s: sing }); });
+  });
+  return Object.assign(o, (en ? c.etapasEn : c.etapas) || {});
 }
 // Segundos (desde que se pagó) en que empieza cada etapa
 const STAGE_T = { delivery: [0, 20, 45, 80, 170], pickup: [0, 20, 45, 80, 260] };
 const STAGE_K = { delivery: ['recibido', 'preparando', 'coccion', 'camino', 'entregado'], pickup: ['recibido', 'preparando', 'coccion', 'lista', 'recogido'] };
-const _stageCache = {};
+// Pedido programado: se queda en "Programado" hasta la hora. Para la demo, la espera real se comprime
+// (24 h ≈ 60 s; mínimo 15 s, máximo 90 s), pero en pantalla se muestran las horas reales.
+function schedInfo(o) {
+  const P = o && o.programado ? Date.parse(o.programado) : NaN;
+  if (!P || isNaN(P)) return null;
+  const W = Math.max(0, P - o.at);
+  return { P, wait: Math.min(90000, Math.max(15000, W / 1440)) };
+}
 function stages(o) {
   const mode = o && o.mode === 'pickup' ? 'pickup' : 'delivery';
-  const e = Object.assign(etapaDefaults(), C().etapas || {});
-  const key = mode + JSON.stringify(e);
-  if (_stageCache[key]) return _stageCache[key];
+  const e = etapaTexts();
   const fill = (s) => String(s || '').replace('{dominio}', C().dominio || location.hostname);
-  return (_stageCache[key] = STAGE_K[mode].map((k, i) => ({ k, t: STAGE_T[mode][i], label: e[k], txt: e[k + 'Texto'], wa: fill(e[k + 'Wa']) })));
+  const sc = schedInfo(o || {});
+  const at0 = o && o.at ? o.at : Date.now();
+  const list = STAGE_K[mode].map((k, i) => ({ k, t: STAGE_T[mode][i], label: e[k], txt: e[k + 'Texto'], wa: fill(e[k + 'Wa']) }));
+  if (!sc) return list.map((x) => Object.assign(x, { at: at0 + x.t * 1000 }));
+  const off = sc.wait / 1000;
+  return [{ k: 'programado', t: 0, at: at0, label: e.programado, txt: e.programadoTexto, wa: fill(e.programadoWa) }]
+    .concat(list.map((x) => Object.assign(x, { t: x.t + off, at: sc.P + x.t * 1000 })));
 }
 const RIDERS = [
   { name: 'Luis Martínez', moto: 'Honda roja · A845221', ini: 'LM' },
@@ -363,7 +526,8 @@ function orderStatus(o, now) {
   let i = 0; st.forEach((s, j) => { if (el >= s.t) i = j; });
   const cur = st[i], nxt = st[i + 1];
   const p = nxt ? Math.min(1, (el - cur.t) / (nxt.t - cur.t)) : 1;
-  return { i, stage: cur, stages: st, part: p, done: !nxt, total: (i + p) / (st.length - 1) };
+  const sc = schedInfo(o);
+  return { i, stage: cur, stages: st, part: p, done: !nxt, total: (i + p) / (st.length - 1), scheduled: !!sc, programado: sc ? sc.P : null };
 }
 function allOrders() { return store.get('brinco_orders', []).slice().sort((a, b) => b.at - a.at); }
 Brinco.orders = {
@@ -378,6 +542,11 @@ Brinco.orders = {
   status: orderStatus,
   stages,
   rider(o) { let h = 0; String(o.no).split('').forEach((c) => { h = (h * 31 + c.charCodeAt(0)) >>> 0; }); return RIDERS[h % RIDERS.length]; },
+  // Tienda donde se recoge (la escogida en el pedido, o la de brinco.json)
+  store(o) {
+    const c = C(), l = Array.isArray(c.tiendas) && c.tiendas.length ? c.tiendas : [c.tienda || {}];
+    return Object.assign({ nombre: c.nombre }, (o && o.tienda) || l[0] || {});
+  },
   save(o) {
     const a = store.get('brinco_orders', []);
     const i = a.findIndex((x) => x.no === o.no);
@@ -442,6 +611,7 @@ function waEnsure() {
 function showWa(html, onClick, ms) {
   const w = waEnsure();
   $('#waText', w).innerHTML = html;
+  const nw = w.querySelector('.bk-wa-tt span'); if (nw) nw.textContent = t('now');
   w.onclick = onClick || null;
   w.classList.add('bk-show');
   clearTimeout(waTimer);
@@ -453,10 +623,10 @@ Brinco._ui = { toast, waNote: showWa, hideWa, bword, icons: ICONS, isOpen: () =>
 
 /* --- src/core/65-vault.js --- */
 /* ===== Brinco Kit · aviso de confianza: Brinco no guarda tarjetas (las guarda AZUL, CardNet o MIO) ===== */
-const PROCS = '<span class="bk-vault-procs" aria-label="Procesadores: AZUL, CardNet y MIO"><i>AZUL</i><i>CardNet</i><i>MIO</i></span>';
+const PROCS = () => `<span class="bk-vault-procs" aria-label="${t('vaultProcs')}"><i>AZUL</i><i>CardNet</i><i>MIO</i></span>`;
 function vaultHTML(compact) {
   if (compact) return `<p class="bk-vault-line">${ICONS.shield}<span>${t('vaultLine')}</span></p>`;
-  return `<div class="bk-vault"><span class="bk-vault-ic">${ICONS.shield}</span><div class="bk-vault-tx"><b>${t('vaultT')}</b><span>${t('vaultTx')}</span>${PROCS}</div></div>`;
+  return `<div class="bk-vault"><span class="bk-vault-ic">${ICONS.shield}</span><div class="bk-vault-tx"><b>${t('vaultT')}</b><span>${t('vaultTx')}</span>${PROCS()}</div></div>`;
 }
 function vaultFooterHTML() {
   return `<span class="bk-fvault">${ICONS.shield.replace('width="18" height="18"', 'width="16" height="16"')}<span>${t('vaultFooter')}</span></span>`;
@@ -477,6 +647,7 @@ function watchVaultFooters() {
     requestAnimationFrame(() => { pend = false; if (document.querySelector('[data-brinco="vault-footer"]:not([data-bk-done])')) fillVaultFooters(document); });
   }).observe(document.body, { childList: true, subtree: true });
 }
+window.addEventListener('brinco:lang', () => { $$('[data-brinco="vault-footer"][data-bk-done]').forEach((el) => el.removeAttribute('data-bk-done')); fillVaultFooters(document); });
 Brinco.fill = function (r) { fillVaultFooters(r || document); };
 Brinco._vault = { html: vaultHTML, footerHTML: vaultFooterHTML, fill: fillVaultFooters };
 
@@ -533,12 +704,6 @@ Brinco._shared = SHARED;
 /* --- src/core/75-passkeys.js --- */
 /* ===== Brinco Kit · Passkeys: Face ID / huella (WebAuthn real; demo sin servidor, no se verifican firmas) =====
    En este equipo se guarda solo { phone, credId } en brinco_passkey. La biometría nunca sale del teléfono. */
-const PK_TXT = {
-  faceid: { name: 'Face ID', enter: 'Entrar con Face ID', on: 'Activar Face ID', title: '¿Entrar con Face ID la próxima vez?', use: 'Mira tu celular para entrar con Face ID.', ok: 'Face ID activado', pay: 'Confirma con Face ID…' },
-  touchid: { name: 'Touch ID', enter: 'Entrar con Touch ID', on: 'Activar Touch ID', title: '¿Entrar con Touch ID la próxima vez?', use: 'Pon tu dedo en Touch ID para entrar.', ok: 'Touch ID activado', pay: 'Confirma con Touch ID…' },
-  huella: { name: 'Huella', enter: 'Entrar con tu huella', on: 'Activar huella', title: '¿Entrar con tu huella la próxima vez?', use: 'Pon tu dedo en el lector para entrar.', ok: 'Huella activada', pay: 'Confirma con tu huella…' },
-  bio: { name: 'Biometría', enter: 'Entrar con biometría', on: 'Activar biometría', title: '¿Entrar con biometría la próxima vez?', use: 'Confirma con la biometría de tu equipo.', ok: 'Biometría activada', pay: 'Confirma con tu biometría…' }
-};
 // Navegador dentro de Instagram/Facebook/TikTok o WebView de Android: ahí las passkeys del equipo no funcionan
 // (la llamada se queda colgada o falla callada), así que NUNCA se llama a navigator.credentials.
 const UA = navigator.userAgent || '';
@@ -563,7 +728,7 @@ const PK = {
     if (/Macintosh/.test(ua)) return 'touchid';
     return 'bio';
   },
-  t(k) { return PK_TXT[PK.kind()][k]; },
+  t(k) { return t('pk_' + PK.kind() + '_' + k); },
   inapp: INAPP,
   can() { return !INAPP && !!(window.PublicKeyCredential && navigator.credentials && navigator.credentials.get && window.isSecureContext !== false); },
   // ¿Este equipo tiene lector biométrico? (se pregunta una sola vez)
@@ -620,15 +785,7 @@ const PK = {
     });
   }
 };
-// Abrir esta misma página en Safari (iOS) o Chrome (Android) con ?bk=pk
-function outURL() {
-  const path = location.pathname + '?bk=pk';
-  if (IOS) return 'x-safari-' + location.origin + path;
-  if (ANDROID) return 'intent://' + location.host + path + '#Intent;scheme=https;package=com.android.chrome;end';
-  return location.origin + path;
-}
-const canOut = () => INAPP && (IOS || ANDROID);
-const outBrowser = () => (IOS ? 'Safari' : 'Chrome');
+
 // Ícono: rostro (Face ID / biometría) o huella (Android / Touch ID)
 function pkIcon(size) {
   size = size || 22;
@@ -648,18 +805,75 @@ const BRAND_IMG = { visa: 'visa.webp', mastercard: 'mastercard.webp' };
 const brandImg = (b) => (BRAND_IMG[b] ? Brinco._img(BRAND_IMG[b]) : '');
 const cardBrand = (n) => { const d = digits(n); if (/^4/.test(d)) return 'visa'; if (/^(5[1-5]|2[2-7])/.test(d)) return 'mastercard'; if (/^3[47]/.test(d)) return 'amex'; return null; };
 const luhn = (n) => { const d = digits(n); if (d.length < 13) return false; let s = 0, alt = false; for (let i = d.length - 1; i >= 0; i--) { let x = +d[i]; if (alt) { x *= 2; if (x > 9) x -= 9; } s += x; alt = !alt; } return s % 10 === 0; };
-const brandName = (b) => ({ visa: 'Visa', mastercard: 'Mastercard', amex: 'Amex' }[b] || 'Tarjeta');
+const brandName = (b) => ({ visa: 'Visa', mastercard: 'Mastercard', amex: 'Amex' }[b] || t('card'));
 const authCode = () => Math.random().toString(36).slice(2, 8).toUpperCase();
 const declineMsg = (c) => t('d' + c) !== 'd' + c ? t('d' + c) : t('d05');
 const ent = () => Object.assign({ delivery: true, pickup: true, deliveryMin: 35, deliveryMax: 45, pickupMin: 20 }, C().entrega || {});
 const SHIP = () => (ent().delivery ? Number(C().envio) || 0 : 0);
 const cart = () => window.BrincoCart || null;
+// v1.1: ITBIS aparte, envío gratis desde un monto, varias tiendas, pedidos programados
+const itbisCfg = () => { const i = C().itbis || {}; return { incl: i.incluido !== false, tasa: Number(i.tasa != null ? i.tasa : 0.18) }; };
+const freeFrom = () => Number(C().envioGratisDesde) || 0;
+function shipFor(mode, base) { if (mode !== 'delivery') return 0; const g = freeFrom(); return g && base >= g ? 0 : SHIP(); }
+function stores() {
+  const l = Array.isArray(C().tiendas) && C().tiendas.length ? C().tiendas : [Object.assign({ nombre: C().nombre }, C().tienda || {})];
+  return l.map((x) => Object.assign({ nombre: C().nombre }, x));
+}
+const curStore = () => { const l = stores(); return l[Math.min(S.store || 0, l.length - 1)] || l[0]; };
+const progOn = () => !!(C().programar && C().programar.activo);
+function hm(s, d) { const m = /^(\d{1,2}):(\d{2})$/.exec(String(s || '')); return m ? [+m[1], +m[2]] : d; }
+// Días y horas disponibles: desde ahora + anticipación, dentro del horario, durante "dias" días
+function buildSlots() {
+  const p = C().programar || {};
+  const lead = (Number(p.anticipacionHoras) || 0) * 3600e3, step = (Number(p.intervaloMin) || 30) * 60e3, want = Number(p.dias) || 7;
+  const h = p.horario || {}, op = hm(h.apertura, [8, 0]), cl = hm(h.cierre, [20, 0]);
+  const earliest = Date.now() + lead, out = [];
+  const d0 = new Date(); d0.setHours(0, 0, 0, 0);
+  for (let d = 0; d < want + Math.ceil(lead / 864e5) + 2 && out.length < want; d++) {
+    const day = new Date(d0); day.setDate(d0.getDate() + d);
+    const a = new Date(day); a.setHours(op[0], op[1], 0, 0);
+    const z = new Date(day); z.setHours(cl[0], cl[1], 0, 0);
+    const times = [];
+    for (let x = a.getTime(); x + step <= z.getTime() + 1; x += step) if (x >= earliest) times.push(x);
+    if (times.length) out.push({ day: day.getTime(), times });
+  }
+  return out;
+}
+function dayLabel(ms) {
+  const d0 = new Date(); d0.setHours(0, 0, 0, 0);
+  const n = Math.round((ms - d0.getTime()) / 864e5);
+  const dm = new Date(ms).toLocaleDateString(loc(), { day: 'numeric', month: 'short' });
+  return n === 0 ? t('today') + ', ' + dm : n === 1 ? t('tomorrow') + ', ' + dm : new Date(ms).toLocaleDateString(loc(), { weekday: 'short', day: 'numeric', month: 'short' });
+}
+function progHTML(px) {
+  if (!progOn()) return '';
+  const sl = buildSlots();
+  if (!sl.length) return `<div class="bk-sec"><h3>${t('when')}</h3><p class="bk-muted">${t('noSlots')}</p></div>`;
+  if (!S.prog || !sl.some((d) => d.times.indexOf(S.prog) >= 0)) S.prog = sl[0].times[0];
+  const cur = sl.find((d) => d.times.indexOf(S.prog) >= 0) || sl[0];
+  return `<div class="bk-sec bk-when"><h3>${t('when')}</h3><div class="bk-row2">
+    <div class="bk-fld"><label for="${px}Day">${t('day')}</label><select id="${px}Day">${sl.map((d) => `<option value="${d.day}"${d === cur ? ' selected' : ''}>${esc(dayLabel(d.day))}</option>`).join('')}</select></div>
+    <div class="bk-fld"><label for="${px}Slot">${t('hour')}</label><select id="${px}Slot">${slotOpts(cur)}</select></div>
+  </div></div>`;
+}
+function slotOpts(d) { return d.times.map((x) => `<option value="${x}"${x === S.prog ? ' selected' : ''}>${esc(hhmm(x))}</option>`).join(''); }
+function bindProg(px) {
+  const dy = body.querySelector('#' + px + 'Day'), sl = body.querySelector('#' + px + 'Slot');
+  if (!dy || !sl) return;
+  dy.addEventListener('change', () => { const d = buildSlots().find((x) => String(x.day) === dy.value); if (!d) return; S.prog = d.times[0]; sl.innerHTML = slotOpts(d); });
+  sl.addEventListener('change', () => { S.prog = +sl.value; });
+}
+function storesHTML(px) {
+  const l = stores(); if (l.length < 2) return '';
+  return `<div class="bk-sec bk-stores" id="${px}Stores"><h3>${t('storeChoose')}</h3>${l.map((x, i) => `<button type="button" class="bk-opt" role="radio" data-store="${i}" aria-checked="${(S.store || 0) === i}"><span class="bk-dot"></span><span class="bk-otx"><b>${esc(x.nombre)}</b><span>${esc(x.direccion || '')}</span></span></button>`).join('')}</div>`;
+}
+const notaHTML = (c) => (c.nota ? `<small class="bk-nota">“${esc(c.nota)}”</small>` : '');
 const CONSENT_CARD = 'Guardar esta tarjeta para mis compras en negocios Brinco. Brinco no guarda tu tarjeta: la guarda tu procesador de pago (AZUL, CardNet o MIO).';
 const CONSENT_ACC = 'Guardar mis datos en Brinco para pagar con un toque en cualquier negocio Brinco';
 
 // ---------- Estado de la caja ----------
 const S = { mode: 'delivery', view: 'checkout', hist: [], pendingPay: null, otpCode: '', otpPhone: '', otpNext: null,
-  bAddr: null, bCard: null, bNew: false, pkAsked: {}, coupon: null, form: store.get('brinco_form', null) };
+  bAddr: null, bCard: null, bNew: false, pkAsked: {}, coupon: null, store: 0, prog: null, form: store.get('brinco_form', null) };
 
 // ---------- DOM (se crea al abrir por primera vez) ----------
 let root = null, body = null;
@@ -719,19 +933,22 @@ function setErr(id, on) { const f = body.querySelector('#' + id); if (!f) return
 function totals(mode) {
   const items = cart() ? cart().items() || [] : [];
   const sub = cart() && typeof cart().total === 'function' ? Number(cart().total()) || items.reduce((a, c) => a + c.qty * c.unit, 0) : items.reduce((a, c) => a + c.qty * c.unit, 0);
-  const ship = (mode || S.mode) === 'delivery' ? SHIP() : 0;
   const disc = S.coupon ? Math.min(sub, Number(S.coupon.monto) || 0) : 0;
-  return { items, sub, ship, disc, total: Math.max(0, sub + ship - disc) };
+  const ship = shipFor(mode || S.mode, sub - disc);
+  const ic = itbisCfg(), base = Math.max(0, sub - disc + ship);
+  const tax = ic.incl ? 0 : Math.round(base * ic.tasa);
+  return { items, sub, ship, disc, tax, taxRate: ic.tasa, taxIncl: ic.incl, total: base + tax };
 }
 function sumHTML(mode) {
   const tt = totals(mode);
   return `<div class="bk-sum">
-    ${tt.items.map((c) => `<div class="bk-l"><span>${c.qty} × ${esc(c.name)}${c.detail ? ` <small class="bk-dim">· ${esc(c.detail)}</small>` : ''}</span><span>${fmt(c.qty * c.unit)}</span></div>`).join('')}
+    ${tt.items.map((c) => `<div class="bk-l"><span>${c.qty} × ${esc(c.name)}${c.detail ? ` <small class="bk-dim">· ${esc(c.detail)}</small>` : ''}${notaHTML(c)}</span><span>${fmt(c.qty * c.unit)}</span></div>`).join('')}
     <div class="bk-l bk-l-sub"><span>${t('subtotal')}</span><span>${fmt(tt.sub)}</span></div>
     <div class="bk-l"><span>${(mode || S.mode) === 'delivery' ? t('ship') : t('pickup')}</span><span>${tt.ship ? fmt(tt.ship) : t('free')}</span></div>
     ${tt.disc ? `<div class="bk-l bk-l-disc"><span>${t('coupon')} ${esc(S.coupon.codigo)}</span><span>− ${fmt(tt.disc)}</span></div>` : ''}
+    ${tt.tax ? `<div class="bk-l bk-l-tax"><span>${t('itbisLine', { p: Math.round(tt.taxRate * 100) })}</span><span>${fmt(tt.tax)}</span></div>` : ''}
     <div class="bk-l bk-tot"><span>${t('total')}</span><span>${fmt(tt.total)}</span></div>
-    <span class="bk-note">${t('itbis')}</span>
+    ${tt.taxIncl ? `<span class="bk-note">${t('itbis')}</span>` : ''}
   </div>`;
 }
 const badgesHTML = () => `<div class="bk-badges"><img src="${Brinco._img('visa.webp')}" alt="Visa"><img src="${Brinco._img('mastercard.webp')}" alt="Mastercard"><img src="${Brinco._img('visa-secure.webp')}" alt="Visa Secure"><img src="${Brinco._img('mastercard-id-check.webp')}" alt="Mastercard ID Check"></div>`;
@@ -743,7 +960,7 @@ function azulHTML(prefix) {
     <div class="bk-azul-err" id="${prefix}AzErr" role="alert" hidden></div>
     <div class="bk-fld bk-cardnum"><label for="${prefix}Num">${t('cardNum')}</label><input id="${prefix}Num" inputmode="numeric" autocomplete="cc-number" placeholder="0000 0000 0000 0000" maxlength="19"><span class="bk-cbrand" id="${prefix}Brand"></span><span class="bk-err">${t('cardNumErr')}</span></div>
     <div class="bk-row2">
-      <div class="bk-fld"><label for="${prefix}Exp">${t('exp')}</label><input id="${prefix}Exp" inputmode="numeric" autocomplete="cc-exp" placeholder="MM/AA" maxlength="5"><span class="bk-err">${t('expErr')}</span></div>
+      <div class="bk-fld"><label for="${prefix}Exp">${t('exp')}</label><input id="${prefix}Exp" inputmode="numeric" autocomplete="cc-exp" placeholder="${t('expPh')}" maxlength="5"><span class="bk-err">${t('expErr')}</span></div>
       <div class="bk-fld"><label for="${prefix}Cvv">${t('cvv')}</label><input id="${prefix}Cvv" inputmode="numeric" autocomplete="cc-csc" placeholder="123" maxlength="4"><span class="bk-err">${t('cvvErr')}</span></div>
     </div>
     <div class="bk-fld"><label for="${prefix}Holder">${t('holder')}</label><input id="${prefix}Holder" autocomplete="cc-name" placeholder="${t('holderPh')}"><span class="bk-err">${t('holderErr')}</span></div>
@@ -796,9 +1013,11 @@ VIEWS.checkout = function (o) {
     <div class="bk-or">${t('orCard')}</div>
     ${e.delivery && e.pickup ? `<div class="bk-sec"><h3>${t('howTitle')}</h3>
       <div class="bk-seg" role="group" aria-label="Entrega">
-        <button type="button" data-mode="delivery" aria-pressed="${S.mode === 'delivery'}">${t('delivery')}<small>+${fmt(SHIP())} · ${e.deliveryMin}–${e.deliveryMax} ${t('min')}</small></button>
+        <button type="button" data-mode="delivery" aria-pressed="${S.mode === 'delivery'}">${t('delivery')}<small id="coShipTx">${shipSmall()}</small></button>
         <button type="button" data-mode="pickup" aria-pressed="${S.mode === 'pickup'}">${t('pickup')}<small>${t('free')} · ${e.pickupMin} ${t('min')}</small></button>
-      </div></div>` : ''}
+      </div>${freeHint()}</div>` : (e.delivery && freeFrom() ? `<div class="bk-sec">${freeHint()}</div>` : '')}
+    <div id="coStoresWrap"${S.mode === 'pickup' ? '' : ' hidden'}>${storesHTML('co')}</div>
+    ${progHTML('co')}
     <div class="bk-sec"><h3>${t('yourData')}</h3>
       <div class="bk-fld"><label for="coName">${t('name')}</label><input id="coName" autocomplete="name" placeholder="${t('namePh')}"><span class="bk-err">${t('nameErr')}</span></div>
       <div class="bk-fld"><label for="coPhone">${t('wa')}</label><input id="coPhone" type="tel" inputmode="tel" autocomplete="tel-national" placeholder="809-555-1234"><span class="bk-err">${t('waErr')}</span></div>
@@ -812,7 +1031,7 @@ VIEWS.checkout = function (o) {
     </div>
     <div class="bk-sec"><h3>${t('payment')}</h3>${azulHTML('c')}</div>
     <label class="bk-chk"><input type="checkbox" id="coSave"><span>${t('saveBrinco', { brinco: bword() })}<small>${t('saveBrincoSmall')}</small></span></label>
-    ${cup && cup.codigo ? `<div class="bk-coupon"><div class="bk-fld"><label for="coCoupon">${t('coupon')}${cup.texto ? ` <span class="bk-dim">· ${esc(cup.texto)}</span>` : ''}</label><div class="bk-coupon-row"><input id="coCoupon" autocomplete="off" placeholder="${esc(cup.codigo)}" value="${S.coupon ? esc(S.coupon.codigo) : ''}"><button type="button" class="bk-coupon-go" id="coCouponGo">${S.coupon ? '✓' : 'Aplicar'}</button></div><span class="bk-err">Ese cupón no es válido.</span></div></div>` : ''}
+    ${cup && cup.codigo ? `<div class="bk-coupon"><div class="bk-fld"><label for="coCoupon">${t('coupon')}${cup.texto ? ` <span class="bk-dim">· ${esc(cup.texto)}</span>` : ''}</label><div class="bk-coupon-row"><input id="coCoupon" autocomplete="off" placeholder="${esc(cup.codigo)}" value="${S.coupon ? esc(S.coupon.codigo) : ''}"><button type="button" class="bk-coupon-go" id="coCouponGo">${S.coupon ? '✓' : t('apply')}</button></div><span class="bk-err">${t('couponErr')}</span></div></div>` : ''}
     <div id="coSum">${sumHTML()}</div>
     <button class="bk-pay" type="button" id="coPay">${ICONS.lock(18)}<span>${t('pay')} ${fmt(tt.total)}</span></button>
     ${testNote()}${badgesHTML()}`, { root: true, replace: o.replace });
@@ -822,11 +1041,18 @@ VIEWS.checkout = function (o) {
   bindAzul('c');
   $('#coPhone', body).addEventListener('input', (ev) => { ev.target.value = fmtPhone(ev.target.value); setErr('coPhone', false); });
   ['coName', 'coStreet', 'coSector'].forEach((k) => { const el = $('#' + k, body); if (el) { el.addEventListener('input', () => setErr(k, false)); el.addEventListener('change', () => setErr(k, false)); } });
-  const repaint = () => { $('#coSum', body).innerHTML = sumHTML(); $('#coPay span', body).textContent = t('pay') + ' ' + fmt(totals().total); };
+  const repaint = () => {
+    $('#coSum', body).innerHTML = sumHTML(); $('#coPay span', body).textContent = t('pay') + ' ' + fmt(totals().total);
+    const st = $('#coShipTx', body); if (st) st.textContent = shipSmall();
+    const fh = $('#coFree', body); if (fh) fh.outerHTML = freeHint();
+  };
+  bindProg('co');
+  $$('[data-store]', body).forEach((b) => b.addEventListener('click', () => { S.store = +b.dataset.store; $$('[data-store]', body).forEach((x) => x.setAttribute('aria-checked', String(x === b))); }));
   $$('[data-mode]', body).forEach((b) => b.addEventListener('click', () => {
     S.mode = b.dataset.mode;
     $$('[data-mode]', body).forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
     $('#coAddr', body).hidden = S.mode !== 'delivery';
+    $('#coStoresWrap', body).hidden = S.mode !== 'pickup';
     repaint();
   }));
   const cgo = $('#coCouponGo', body);
@@ -835,7 +1061,7 @@ VIEWS.checkout = function (o) {
       const v = $('#coCoupon', body).value.trim().toUpperCase();
       const ok = v && v === String(cup.codigo).toUpperCase();
       setErr('coCoupon', !!v && !ok);
-      S.coupon = ok ? cup : null; cgo.textContent = ok ? '✓' : 'Aplicar';
+      S.coupon = ok ? cup : null; cgo.textContent = ok ? '✓' : t('apply');
       if (ok) track('cupon', { codigo: cup.codigo });
       repaint();
     };
@@ -846,6 +1072,16 @@ VIEWS.checkout = function (o) {
   $('#coPay', body).addEventListener('click', payWithCard);
 };
 
+function shipSmall() {
+  const e = ent(), tt = totals('delivery');
+  return (tt.ship ? '+' + fmt(tt.ship) : t('free')) + ' · ' + e.deliveryMin + '–' + e.deliveryMax + ' ' + t('min');
+}
+// "Te faltan RD$X para envío gratis" / "¡Tu envío es gratis!" (solo con envioGratisDesde)
+function freeHint() {
+  const g = freeFrom(); if (!g || !ent().delivery) return '';
+  const tt = totals('delivery'), left = g - (tt.sub - tt.disc);
+  return `<p class="bk-free${left <= 0 ? ' bk-free-ok' : ''}" id="coFree">${left <= 0 ? t('freeOk') : t('freeLeft', { x: fmt(left) })}</p>`;
+}
 function keepForm() {
   S.form = {};
   ['coName', 'coPhone', 'coStreet', 'coSector', 'coRef'].forEach((k) => { const el = $('#' + k, body); if (el) S.form[k] = el.value; });
@@ -867,7 +1103,8 @@ function payWithCard() {
   keepForm();
   const save = $('#coSave', body).checked;
   const tt = totals();
-  S.pendingPay = { via: 'tarjeta', name, phone: phoneDigits(phone), mode: S.mode, address: S.mode === 'delivery' ? { street, sector, ref, label: t('home') } : null, card, save, total: tt.total };
+  S.pendingPay = { via: 'tarjeta', name, phone: phoneDigits(phone), mode: S.mode, address: S.mode === 'delivery' ? { street, sector, ref, label: t('home') } : null, card, save, total: tt.total,
+    store: S.mode === 'pickup' ? curStore() : null, prog: progOn() ? S.prog : null };
   wipeAzul('c');
   track('pago_enviado', { total: tt.total, metodo: 'tarjeta', guardar: save });
   if (save) sendOtp(phone, () => verify3ds());   // Cuenta Brinco nueva al pagar (flujo A): primero confirmamos el WhatsApp
@@ -886,7 +1123,7 @@ function sendOtp(phone, next) {
       <p class="bk-h3">${t('otpTitle')}</p>
       <p class="bk-muted">${t('otpSent', { phone: '<b>' + fmtPhone(S.otpPhone) + '</b>' })}</p>
     </div>
-    <div class="bk-otp" id="otpBoxes"><input inputmode="numeric" autocomplete="one-time-code" aria-label="Dígito 1">${[2, 3, 4, 5, 6].map((n) => `<input inputmode="numeric" aria-label="Dígito ${n}">`).join('')}</div>
+    <div class="bk-otp" id="otpBoxes"><input inputmode="numeric" autocomplete="one-time-code" aria-label="${t('digit', { n: 1 })}">${[2, 3, 4, 5, 6].map((n) => `<input inputmode="numeric" aria-label="${t('digit', { n })}">`).join('')}</div>
     <p class="bk-muted bk-center" id="otpMsg" role="alert"></p>
     <button class="bk-pay bk-blue" type="button" id="otpGo">${t('otpGo')}</button>
     <button class="bk-link" type="button" id="otpAgain">${t('otpAgain')}</button>`, { brinco: true });
@@ -936,8 +1173,8 @@ function sendOtp(phone, next) {
 function offerPasskey(phone, next) {
   const acc = B.accounts()[phone];
   if (!acc || S.pkAsked[phone]) { next(); return; }
-  // Dentro de Instagram/Facebook…: se ofrece abrir en Safari/Chrome (sin llamar a WebAuthn)
-  if (INAPP) { if (canOut()) { S.pkAsked[phone] = true; VIEWS.bPasskeyOut(phone, next); } else next(); return; }
+  // Dentro de Instagram/Facebook…: no se ofrece Face ID (ahí no funciona); se sigue con el código de WhatsApp
+  if (INAPP) { next(); return; }
   const d = PK.device();
   if (d && d.phone === phone) { next(); return; }
   PK.available().then((ok) => {
@@ -975,28 +1212,6 @@ VIEWS.bPasskey = function (phone, next) {
   $('#pkSkip', body).addEventListener('click', () => next());
 };
 
-VIEWS.bPasskeyOut = function (phone, next) {
-  if (typeof next !== 'function') { VIEWS.checkout({ replace: true }); return; }
-  show('bPasskey', `
-    <div class="bk-pk-offer">
-      <span class="bk-pk-ico">${pkIcon(46)}</span>
-      <p class="bk-h3">${t('pkOutTitle', { x: PK.t('name'), b: outBrowser() })}</p>
-      <p class="bk-muted">${t('pkOutTx', { app: inAppName(), x: PK.t('name'), b: outBrowser() })}</p>
-      <ul class="bk-pk-pts"><li>${ICONS.check}${t('pkPoints1')}</li><li>${ICONS.check}${t('pkPoints2')}</li></ul>
-    </div>
-    <a class="bk-pay bk-blue" id="pkOut" href="${esc(outURL())}">${pkIcon(22)}${t('openIn', { b: outBrowser() })}</a>
-    <button class="bk-link" type="button" id="pkSkip">${t('notNow')}</button>`, { brinco: true, root: true });
-  $('#pkOut', body).addEventListener('click', () => { track('passkey_safari', { app: inAppName() }); setTimeout(() => { if (S.view === 'bPasskey') next(); }, 1500); });
-  $('#pkSkip', body).addEventListener('click', () => next());
-};
-function inAppName() {
-  const ua = navigator.userAgent || '';
-  if (/Instagram/i.test(ua)) return 'Instagram';
-  if (/FBAN|FBAV|FB_IAB|FBIOS|FB4A/i.test(ua)) return 'Facebook';
-  if (/TikTok|musical_ly|Bytedance/i.test(ua)) return 'TikTok';
-  return 'esta app';
-}
-
 VIEWS.bPasskeyOk = function (next) {
   if (typeof next !== 'function') { VIEWS.checkout({ replace: true }); return; }
   show('bPasskeyOk', `<div class="bk-view bk-done bk-flat">
@@ -1033,7 +1248,7 @@ function verify3ds() {
     <img class="bk-logo3ds" src="${logo}" alt="">
     <p class="bk-h3">${t('verifyBank')}</p>
     <p class="bk-muted">${brandName(p.card.brand)} •••• ${p.card.last4} · ${fmt(p.total)}</p>
-    <div class="bk-spin" aria-label="Procesando"></div>
+    <div class="bk-spin" aria-label="${t('processingAria')}"></div>
     <p class="bk-muted bk-small">${t('noClose')}</p></div>`, { replace: true, brinco: p.via === 'brinco' });
   $('#coBack', root).hidden = true;
   setTimeout(charge, 2100);
@@ -1042,7 +1257,7 @@ function processing() {
   const p = S.pendingPay;
   show('verify', `<div class="bk-view bk-verify bk-flat">
     ${bword(30)}
-    <div class="bk-spin" aria-label="Procesando"></div>
+    <div class="bk-spin" aria-label="${t('processingAria')}"></div>
     <p class="bk-h3">${t('processing')}</p>
     <p class="bk-muted">${brandName(p.card.brand)} •••• ${p.card.last4} · ${fmt(p.total)}</p></div>`, { replace: true, brinco: true });
   $('#coBack', root).hidden = true;
@@ -1063,8 +1278,11 @@ function charge() {
   const src = Brinco.source();
   const order = {
     no: Brinco.orders.newNo(), negocio: C().negocio,
-    at: Date.now(), items: tt.items.map((c) => ({ name: c.name, detail: c.detail || '', qty: c.qty, unit: c.unit, img: c.img || '' })),
-    sub: tt.sub, ship: tt.ship, disc: tt.disc || 0, coupon: S.coupon ? S.coupon.codigo : null, total: tt.total, mode: p.mode,
+    at: Date.now(), items: tt.items.map((c) => { const x = { name: c.name, detail: c.detail || '', qty: c.qty, unit: c.unit, img: c.img || '' }; if (c.nota) x.nota = String(c.nota); return x; }),
+    sub: tt.sub, ship: tt.ship, disc: tt.disc || 0, coupon: S.coupon ? S.coupon.codigo : null,
+    itbis: tt.tax || 0, itbisTasa: tt.taxRate, itbisIncluido: tt.taxIncl, total: tt.total, mode: p.mode,
+    tienda: p.mode === 'pickup' && p.store ? { nombre: p.store.nombre || '', direccion: p.store.direccion || '', mapa: p.store.mapa || '' } : null,
+    programado: p.prog ? new Date(p.prog).toISOString() : null,
     name: p.name, phone: p.phone, address: p.address, via: p.via,
     card: { brand: p.card.brand, last4: p.card.last4 }, auth: authCode(),
     src: src.source, med: src.medium, brincoNew: false
@@ -1108,15 +1326,16 @@ VIEWS.done = function (o) {
     ${ICONS.okmark}
     <p class="bk-h3">${t('done')}</p>
     <span class="bk-ordno">${t('order')} ${esc(o.no)}</span>
-    <span class="bk-eta">${ICONS.clock}${o.mode === 'delivery' ? t('arrives', { a: e.deliveryMin, b: e.deliveryMax }) : t('ready', { a: e.pickupMin })}</span>
+    <span class="bk-eta">${ICONS.clock}${o.programado ? t('scheduledFor', { x: esc(fmtWhen(Date.parse(o.programado))) }) : o.mode === 'delivery' ? t('arrives', { a: e.deliveryMin, b: e.deliveryMax }) : t('ready', { a: e.pickupMin })}</span>
     <p class="bk-muted">${t('doneWa', { phone: fmtPhone(o.phone) })}</p>
     <a class="bk-pay bk-track-btn" href="/pedido/?o=${encodeURIComponent(o.no)}">${ICONS.pin}${t('follow')}</a>
     <div class="bk-receipt">
-      ${o.items.map((c) => `<div class="bk-l"><span>${c.qty} × ${esc(c.name)}</span><span>${fmt(c.qty * c.unit)}</span></div>`).join('')}
+      ${o.items.map((c) => `<div class="bk-l"><span>${c.qty} × ${esc(c.name)}${notaHTML(c)}</span><span>${fmt(c.qty * c.unit)}</span></div>`).join('')}
       <div class="bk-l bk-dim"><span>${o.mode === 'delivery' ? t('ship') : t('pickup')}</span><span>${o.ship ? fmt(o.ship) : t('free')}</span></div>
       ${o.disc ? `<div class="bk-l bk-dim"><span>${t('coupon')} ${esc(o.coupon || '')}</span><span>− ${fmt(o.disc)}</span></div>` : ''}
+      ${o.itbis ? `<div class="bk-l bk-dim"><span>${t('itbisLine', { p: Math.round((o.itbisTasa || 0.18) * 100) })}</span><span>${fmt(o.itbis)}</span></div>` : ''}
       <div class="bk-l bk-rtot"><span>${t('paid')}</span><span>${fmt(o.total)}</span></div>
-      <div class="bk-rmeta">${o.via === 'brinco' ? t('paidBrinco') : ''}${brandName(o.card.brand)} •••• ${esc(o.card.last4)} · ${t('auth')} ${esc(o.auth)}${o.address ? '<br>' + t('deliverTo') + ': ' + esc(o.address.street) + ', ' + esc(o.address.sector) : ''}</div>
+      <div class="bk-rmeta">${o.via === 'brinco' ? t('paidBrinco') : ''}${brandName(o.card.brand)} •••• ${esc(o.card.last4)} · ${t('auth')} ${esc(o.auth)}${o.address ? '<br>' + t('deliverTo') + ': ' + esc(o.address.street) + ', ' + esc(o.address.sector) : ''}${o.tienda && stores().length > 1 ? '<br>' + t('pickAt') + ': ' + esc(o.tienda.nombre) + (o.tienda.direccion ? ', ' + esc(o.tienda.direccion) : '') : ''}</div>
     </div>
     ${o.brincoNew ? `<div class="bk-bok">${bword(18)}<br><b>${t('brincoReady')}</b> ${t('brincoReadyTx')}</div>` : ''}
     <button class="bk-link" type="button" data-x>${t('keepShopping')}</button>
@@ -1141,7 +1360,7 @@ VIEWS.bLogin = function (o) {
     <div class="bk-center bk-stack">
       ${bword(34)}
       <p class="bk-h3">${t('bTagline')}</p>
-      <p class="bk-muted">${d ? t('bLoginPk', { x: PK.t('enter').replace('Entrar con ', '') }) : t('bLoginTx')}</p>
+      <p class="bk-muted">${d ? t('bLoginPk', { x: PK.t('enter').replace(t('pk_enterWord'), '') }) : t('bLoginTx')}</p>
     </div>
     ${o.msg ? `<p class="bk-pk-msg" role="status">${esc(o.msg)}</p>` : ''}
     ${d ? `<button class="bk-pay bk-blue" type="button" id="bPk">${pkIcon(22)}${PK.t('enter')}</button><div class="bk-or">${t('orWa')}</div>` : ''}
@@ -1178,7 +1397,7 @@ VIEWS.bProfile = function () {
     <div class="bk-fld"><label for="bName">${t('name')}</label><input id="bName" autocomplete="name" value="${esc(acc.name || f.coName || '')}" autofocus><span class="bk-err">${t('nameErr')}</span></div>
     <div class="bk-fld"><label for="bEmail">${t('email')} <span class="bk-dim bk-light">${t('optional')}</span></label><input id="bEmail" type="email" autocomplete="email" value="${esc(acc.email || '')}"><span class="bk-err">${t('emailErr')}</span></div>
     ${needAddr ? `<div class="bk-sec"><h3 class="bk-blue-h">${t('addrTitle')}</h3>
-      <div class="bk-seg" role="group" aria-label="Etiqueta"><button type="button" data-lbl="${t('home')}" aria-pressed="true">${t('home')}</button><button type="button" data-lbl="${t('work')}" aria-pressed="false">${t('work')}</button></div>
+      <div class="bk-seg" role="group" aria-label="${t('label')}"><button type="button" data-lbl="${t('home')}" aria-pressed="true">${t('home')}</button><button type="button" data-lbl="${t('work')}" aria-pressed="false">${t('work')}</button></div>
       <div class="bk-fld"><label for="bStreet">${t('street')}</label><input id="bStreet" autocomplete="street-address" value="${esc(a0.street || f.coStreet || '')}" placeholder="${t('streetPh')}"><span class="bk-err">${t('streetErr')}</span></div>
       <div class="bk-row2">
         <div class="bk-fld"><label for="bSector">${t('sector')}</label><select id="bSector"><option value="">${t('choose')}</option>${(C().sectores || []).map((s) => `<option ${s === (a0.sector || f.coSector) ? 'selected' : ''}>${esc(s)}</option>`).join('')}</select><span class="bk-err">${t('sectorErr')}</span></div>
@@ -1267,9 +1486,12 @@ VIEWS.bSummary = function (o) {
     <div class="bk-hello"><span class="bk-avatar">${esc((me.name || 'B').trim().charAt(0).toUpperCase())}</span><div><p class="bk-h3 bk-h3-sm">${t('hello', { name: esc(first) })}</p><p class="bk-muted">${fmtPhone(me.phone)}${pk ? ` <span class="bk-pk-tag">${pkIcon(14)}${PK.t('name')}</span>` : ''}</p></div></div>
     ${o.error ? `<div class="bk-azul-err" role="alert">${esc(o.error)}</div>` : ''}
     <div class="bk-sec"><h3 class="bk-blue-h">${t('delivTitle')}</h3>
-      ${addrs.map((a) => `<button type="button" class="bk-opt" role="radio" data-addr="${a.id}" aria-checked="${S.bAddr === a.id}"><span class="bk-dot"></span><span class="bk-otx"><b>${esc(a.label || t('home'))} · ${t('delivery')} ${fmt(SHIP())}</b><span>${esc(a.street)}, ${esc(a.sector)}</span></span></button>`).join('')}
+      ${addrs.map((a) => `<button type="button" class="bk-opt" role="radio" data-addr="${a.id}" aria-checked="${S.bAddr === a.id}"><span class="bk-dot"></span><span class="bk-otx"><b>${esc(a.label || t('home'))} · ${t('delivery')} ${totals('delivery').ship ? fmt(totals('delivery').ship) : t('free')}</b><span>${esc(a.street)}, ${esc(a.sector)}</span></span></button>`).join('')}
       ${e.pickup ? `<button type="button" class="bk-opt" role="radio" data-addr="pickup" aria-checked="${S.bAddr === 'pickup'}"><span class="bk-dot"></span><span class="bk-otx"><b>${t('pickup')} · ${t('free')}</b><span>${t('readyIn', { a: e.pickupMin })}</span></span></button>` : ''}
+      ${e.delivery && freeFrom() ? freeHint() : ''}
     </div>
+    ${mode === 'pickup' ? storesHTML('b') : ''}
+    ${progHTML('b')}
     <div class="bk-sec"><h3 class="bk-blue-h">${t('cardTitle')}</h3>
       ${cards.map((c) => `<button type="button" class="bk-opt" role="radio" data-card="${c.id}" aria-checked="${S.bCard === c.id}"><span class="bk-dot"></span>${brandImg(c.brand) ? `<img src="${brandImg(c.brand)}" alt="">` : ''}<span class="bk-otx"><b>${brandName(c.brand)} •••• ${esc(c.last4)}</b><span>${t('expires', { exp: esc(c.exp) })}${c.main ? ' · ' + t('main') : ''}</span></span></button>`).join('')}
       <button class="bk-link bk-link-left" type="button" id="bAddCard">${t('addOther')}</button>
@@ -1283,13 +1505,12 @@ VIEWS.bSummary = function (o) {
   $$('[data-addr]', body).forEach((b) => b.addEventListener('click', () => { S.bAddr = b.dataset.addr === 'pickup' ? 'pickup' : +b.dataset.addr; VIEWS.bSummary({ replace: true }); }));
   $$('[data-card]', body).forEach((b) => b.addEventListener('click', () => { S.bCard = +b.dataset.card; VIEWS.bSummary({ replace: true }); }));
   $('#bAddCard', body).addEventListener('click', () => VIEWS.bCard());
-  // Sin Face ID en este equipo: ofrecer activarlo aquí mismo (o abrir en Safari si está dentro de Instagram)
+  bindProg('b');
+  $$('[data-store]', body).forEach((b) => b.addEventListener('click', () => { S.store = +b.dataset.store; $$('[data-store]', body).forEach((x) => x.setAttribute('aria-checked', String(x === b))); }));
+  // Sin Face ID en este equipo: ofrecer activarlo aquí mismo (nunca dentro de Instagram/Facebook…)
   const slot = $('#pkSlot', body);
   if (slot) {
-    if (canOut()) {
-      slot.innerHTML = `<a class="bk-pk-banner" href="${esc(outURL())}"><span class="bk-pk-ico bk-sm">${pkIcon(22)}</span><span class="bk-pk-tx"><b>${t('safariT', { x: PK.t('name') })}</b><span>${t('safariTx', { n: esc(C().nombre), b: outBrowser(), x: PK.kind() === 'huella' ? t('yourPrint') : t('yourFace') })}</span></span><span class="bk-go">${t('open')}</span></a>`;
-      $('.bk-pk-banner', slot).addEventListener('click', () => track('passkey_safari', { app: inAppName(), desde: 'resumen' }));
-    } else {
+    if (!INAPP) {
       PK.available().then((ok) => {
         if (!ok || S.view !== 'bSummary' || !document.body.contains(slot)) return;
         slot.innerHTML = `<button type="button" class="bk-pk-banner" id="pkAct"><span class="bk-pk-ico bk-sm">${pkIcon(22)}</span><span class="bk-pk-tx"><b>${PK.t('on')}</b><span>${t('pkBanner', { x: PK.kind() === 'faceid' ? t('aLook') : t('aTouch') })}</span></span><span class="bk-go">${t('activate')}</span></button>`;
@@ -1317,7 +1538,8 @@ VIEWS.bSummary = function (o) {
     const addr = addrs.find((a) => a.id === S.bAddr) || null;
     S.mode = mode;
     S.pendingPay = { via: 'brinco', name: me.name, phone: me.phone, mode, address: mode === 'delivery' ? addr : null,
-      card: { brand: card.brand, last4: card.last4, exp: card.exp, declineCode: card.declineCode || null }, total: totals(mode).total };
+      card: { brand: card.brand, last4: card.last4, exp: card.exp, declineCode: card.declineCode || null }, total: totals(mode).total,
+      store: mode === 'pickup' ? curStore() : null, prog: progOn() ? S.prog : null };
     const pay = () => { track('pago_enviado', { total: S.pendingPay.total, metodo: 'brinco' }); processing(); };
     // Con Face ID / huella activo: se pide justo antes de cobrar (salvo que acabe de usarlo hace menos de 2 min)
     if (pk && !(PK.lastAt && Date.now() - PK.lastAt < 120000)) {
@@ -1365,6 +1587,8 @@ function close() {
   if (lastFocus && lastFocus.focus) { try { lastFocus.focus({ preventScroll: true }); } catch (e) {} }
   document.dispatchEvent(new CustomEvent('brinco:checkout-close'));
 }
+// Cambio de idioma: la hoja se vuelve a armar la próxima vez que se abra
+window.addEventListener('brinco:lang', () => { if (root && !root.classList.contains('bk-open')) { root.remove(); root = null; body = null; } });
 Brinco.checkout = open;
 Brinco.closeCheckout = close;
 Brinco._ui.isOpen = () => !!(root && root.classList.contains('bk-open'));
@@ -1395,25 +1619,34 @@ Brinco._ui.isOpen = () => !!(root && root.classList.contains('bk-open'));
     return (M.cfg().moneda || 'RD$') + ' ' + Math.round(n || 0).toLocaleString('es-DO');
   };
   M.track = function (n, d) { var B = M.B(); if (typeof B.track === 'function') { try { B.track(n, d || {}); } catch (e) {} } };
-  M.hhmm = function (t) { return new Date(t).toLocaleTimeString('es-DO', { hour: 'numeric', minute: '2-digit' }); };
+  // Idioma (core): M.t('clave', {vars}), M.en() y M.loc() para fechas
+  M.t = function (k, v) { var B = M.B(); return typeof B._t === 'function' ? B._t(k, v) : k; };
+  M.en = function () { var B = M.B(); return typeof B.lang === 'function' && B.lang() === 'en'; };
+  M.loc = function () { return M.en() ? 'en-US' : 'es-DO'; };
+  M.when = function (ms) { var B = M.B(); return typeof B._fmtWhen === 'function' ? B._fmtWhen(ms) : new Date(ms).toLocaleString(M.loc()); };
+  M.hhmm = function (t) { return new Date(t).toLocaleTimeString(M.loc(), { hour: 'numeric', minute: '2-digit' }); };
   M.digits = function (s) { return String(s || '').replace(/\D/g, ''); };
   M.fmtPhone = function (s) { var d = M.digits(s); if (d.length === 11 && d[0] === '1') d = d.slice(1); return d.length === 10 ? d.slice(0, 3) + '-' + d.slice(3, 6) + '-' + d.slice(6) : d; };
   M.get = function (k, d) { try { var v = JSON.parse(localStorage.getItem(k)); return v == null ? d : v; } catch (e) { return d; } };
   M.name = function () { var c = M.cfg(); return c.nombreLegal || c.nombre || 'Tienda'; };
   M.short = function () { var c = M.cfg(); return c.nombre || c.nombreLegal || 'Tienda'; };
   M.dominio = function () { return M.cfg().dominio || location.host; };
-  M.producto = function (n) { var p = M.cfg().producto || {}; return n === 1 ? (p.singular || 'producto') : (p.plural || 'productos'); };
+  M.producto = function (n) {
+    var c = M.cfg(), en = M.en(), p = (en ? c.productoEn : c.producto) || {};
+    return n === 1 ? (p.singular || (en ? 'item' : 'producto')) : (p.plural || (en ? 'items' : 'productos'));
+  };
 
   // Encabezado fijo con el logo del negocio y un botón a la derecha
   M.header = function (label, href, extra) {
     var c = M.cfg();
-    var logo = c.logo ? '<img src="' + M.esc(c.logo) + '" alt="' + M.esc(M.name()) + ', inicio">' : '<span class="bk-hd-name">' + M.esc(M.short()) + '</span>';
-    return '<header class="bk-hd"><div class="bk-hd-in"><a class="bk-hd-logo" href="/" aria-label="' + M.esc(M.name()) + ', inicio">' + logo + '</a>' +
+    var logo = c.logo ? '<img src="' + M.esc(c.logo) + '" alt="' + M.esc(M.name()) + ', ' + M.t('hd_home') + '">' : '<span class="bk-hd-name">' + M.esc(M.short()) + '</span>';
+    return '<header class="bk-hd"><div class="bk-hd-in"><a class="bk-hd-logo" href="/" aria-label="' + M.esc(M.name()) + ', ' + M.t('hd_home') + '">' + logo + '</a>' +
       (extra || '') + (label ? '<a class="bk-hd-btn" href="' + M.esc(href || '/') + '">' + M.esc(label) + '</a>' : '') + '</div></header>';
   };
   M.vaultLine = 'Brinco no guarda tarjetas: las protege tu procesador de pago (AZUL, CardNet o MIO).';
+  Object.defineProperty(M, 'vaultLine', { get: function () { return M.t('hd_vault'); } });
   M.footer = function () {
-    return '<footer class="bk-ft"><nav aria-label="Legal"><a href="/seguridad/">Políticas de seguridad</a> · <a href="/privacidad/">Privacidad</a> · <a href="/terminos/">Términos y entregas</a></nav>' +
+    return '<footer class="bk-ft"><nav aria-label="' + M.t('hd_legal') + '"><a href="/seguridad/">' + M.t('hd_sec') + '</a> · <a href="/privacidad/">' + M.t('hd_priv') + '</a> · <a href="/terminos/">' + M.t('hd_terms') + '</a></nav>' +
       '<p data-brinco="vault-footer"></p><p>© ' + new Date().getFullYear() + ' ' + M.esc(M.name()) + '</p></footer>';
   };
 
@@ -1455,7 +1688,14 @@ Brinco._ui.isOpen = () => !!(root && root.classList.contains('bk-open'));
    Textos de PIEZZA generalizados con el nombre, dominio, contacto y entregas de brinco.json. */
 (function () {
   var M = window.__bkm; if (!M) return;
-  var UPD = '14 de octubre de 2026';
+  var UPD = '14 de octubre de 2026', UPD_EN = 'October 14, 2026';
+  var T = function (k, v) { return M.t(k, v); };
+  // ITBIS aparte (brinco.json "itbis": { "incluido": false, "tasa": 0.18 })
+  function itbisTx(en) {
+    var i = M.cfg().itbis || {}, p = Math.round((i.tasa != null ? +i.tasa : 0.18) * 100);
+    if (i.incluido === false) return en ? 'do not include ITBIS; the ' + p + '% ITBIS tax is added at checkout and shown before you pay' : 'no incluyen ITBIS; el ITBIS (' + p + '%) se suma al pagar y se muestra antes de confirmar';
+    return en ? 'include ITBIS (sales tax)' : 'incluyen ITBIS';
+  }
   function img(n) { var B = M.B(); return typeof B._img === 'function' ? B._img(n) : M.base + 'img/' + n; }
   function contacto() {
     var c = M.cfg().contacto || {}, t = M.cfg().tienda || {};
@@ -1464,7 +1704,7 @@ Brinco._ui.isOpen = () => !!(root && root.classList.contains('bk-open'));
     if (c.telefono) lines.push(M.esc(c.telefono));
     if (c.correo) lines.push(/@/.test(c.correo) ? '<a href="mailto:' + M.esc(c.correo) + '">' + M.esc(c.correo) + '</a>' : M.esc(c.correo));
     if (c.instagram) lines.push('Instagram: ' + M.esc(c.instagram));
-    return '<h2>Contacto</h2><p>' + lines.join('<br>') + '</p>';
+    return '<h2>' + (M.en() ? 'Contact' : 'Contacto') + '</h2><p>' + lines.join('<br>') + '</p>';
   }
   var DOCS = {
     seguridad: {
@@ -1499,13 +1739,59 @@ Brinco._ui.isOpen = () => !!(root && root.classList.contains('bk-open'));
         var deliv = e.delivery !== false, pick = e.pickup !== false;
         var dMin = e.deliveryMin || 35, dMax = e.deliveryMax || 45, pMin = e.pickupMin || 20;
         var ent = '';
-        if (deliv) ent += 'Hacemos delivery en los sectores que aparecen al pagar, ' + (envio ? 'con un cargo de envío de ' + M.esc(M.fmt(envio)) : 'sin cargo de envío') + '. El tiempo estimado es de ' + dMin + ' a ' + dMax + ' minutos y puede variar según el tráfico y la demanda.';
+        if (deliv) ent += 'Hacemos delivery en los sectores que aparecen al pagar, ' + (envio ? 'con un cargo de envío de ' + M.esc(M.fmt(envio)) + (+c.envioGratisDesde ? ' (gratis desde ' + M.esc(M.fmt(+c.envioGratisDesde)) + ')' : '') : 'sin cargo de envío') + '. El tiempo estimado es de ' + dMin + ' a ' + dMax + ' minutos y puede variar según el tráfico y la demanda.';
         if (pick) ent += (deliv ? ' Si prefieres, puedes' : 'Puedes') + ' recoger tu pedido en la tienda sin costo; normalmente está listo en unos ' + pMin + ' minutos.';
+        if (c.programar && c.programar.activo) ent += ' También puedes programar tu pedido para otro día y hora.';
         var prod = M.producto(1);
-        return '<h2>Pedidos y precios</h2><p>Los precios se muestran en pesos dominicanos (' + M.esc(c.moneda || 'RD$') + ') e incluyen ITBIS. El pedido se confirma cuando el banco aprueba el pago; recibirás el número de orden en pantalla y un aviso por WhatsApp.</p>' +
+        return '<h2>Pedidos y precios</h2><p>Los precios se muestran en pesos dominicanos (' + M.esc(c.moneda || 'RD$') + ') e ' + itbisTx(false) + '. El pedido se confirma cuando el banco aprueba el pago; recibirás el número de orden en pantalla y un aviso por WhatsApp.</p>' +
           '<h2>Entregas</h2><p>' + ent + '</p>' +
           '<h2>Cancelaciones</h2><p>Puedes cancelar sin cargo mientras no hayamos empezado a preparar tu ' + M.esc(prod) + '. Escríbenos por WhatsApp con tu número de orden.</p>' +
           '<h2>Reembolsos</h2><p>Si tu pedido llega incompleto, equivocado o en mal estado, escríbenos el mismo día con una foto y tu número de orden. Te reponemos el producto o hacemos el reembolso a la misma tarjeta; el reembolso puede tardar de 7 a 15 días hábiles en reflejarse, según tu banco.</p>';
+      }
+    }
+  };
+
+  // English version (config.idioma "en" or Brinco.setLang('en'))
+  var DOCS_EN = {
+    seguridad: {
+      t: 'Security policy for the transmission of card data',
+      d: function (n) { return 'How ' + n + ' and AZUL protect your card data.'; },
+      body: function (n, dom) {
+        return DOCS.seguridad.body(n, dom).split('<h2>')[0] +
+          '<h2>Website</h2><p>We take all reasonable measures and precautions to protect your personal information and follow industry best practices to make sure it is not misused, altered or destroyed. The whole site ' + dom + ' uses an encrypted HTTPS (TLS) connection.</p>' +
+          '<h2>Your card data</h2><p>Your card details are typed directly into AZUL’s secure fields (Servicios Digitales Popular), which encrypt the transmission with TLS and meet PCI DSS requirements. ' + n + ' never receives or stores the full card number or the security code (CVV). We only keep the card brand, the last 4 digits, the authorization code and the transaction reference.</p>' +
+          '<h2>Brinco does not store cards</h2><p>Brinco never stores your card number or security code. If you choose to save your card in your Brinco Account, it is stored and protected by the PCI DSS–certified payment processor that handles the purchase: <b>AZUL</b>, <b>CardNet</b> or <b>MIO</b>. Brinco only receives a secure identifier (token) that cannot be used to rebuild the number and is useless outside your account. You can delete your card or your account at any time.</p>' +
+          '<h2>Face ID and fingerprint</h2><p>If you turn on Face ID or your fingerprint to sign in to Brinco, your biometrics never leave your phone: your device only confirms it is you with a secure key (passkey). Neither ' + n + ' nor Brinco ever sees your face or fingerprint.</p>' +
+          '<h2>3D Secure</h2><p>Purchases may require additional authentication from the issuing bank through Visa Secure and Mastercard ID Check, which protects against unauthorized use of your card.</p>' +
+          '<h2>Payments</h2><p>The payment methods used by ' + n + ' are third-party services (AZUL) that meet all security and encryption standards to keep your information safe. They only use the information needed to complete the payment. We recommend you also read these providers’ privacy policies.</p>';
+      }
+    },
+    privacidad: {
+      t: 'Privacy policy',
+      d: function (n) { return 'What data ' + n + ' collects and why.'; },
+      body: function (n) {
+        return '<h2>What data we use</h2><p>To prepare and deliver your order we use your name, your WhatsApp number and, if you choose delivery, your address and landmark. From the payment we only keep the card brand, the last 4 digits and the bank authorization.</p>' +
+          '<h2>How you reached the store</h2><p>We record which of our links you came through (for example, Instagram or an ad) to learn which channels work. We do not use that information to identify you outside our store.</p>' +
+          '<h2>Brinco Account</h2><p>If you allow it with the corresponding checkbox, your details and card are saved in your Brinco Account so you can pay with one tap at Brinco businesses. Brinco does not store your card number: your payment processor (AZUL, CardNet or MIO) protects it. Each permission is recorded with the date and the text you accepted. ' + n + ' only sees the orders you place with ' + n + ', never your purchases at other businesses.</p>' +
+          '<h2>Messages</h2><p>We message you on WhatsApp to update you on your order. We only send promotions if you agree, and you can opt out anytime.</p>' +
+          '<h2>Your rights</h2><p>You can ask for a copy of your data, correct it or delete it by writing to us. We process your data under Dominican Law 172-13 on the protection of personal data.</p>';
+      }
+    },
+    terminos: {
+      t: 'Terms, delivery and refunds',
+      d: function (n) { return 'Purchase, delivery and refund conditions of ' + n + '.'; },
+      body: function (n) {
+        var c = M.cfg(), e = c.entrega || {}, envio = +c.envio || 0, g = +c.envioGratisDesde || 0;
+        var deliv = e.delivery !== false, pick = e.pickup !== false;
+        var dMin = e.deliveryMin || 35, dMax = e.deliveryMax || 45, pMin = e.pickupMin || 20;
+        var ent = '';
+        if (deliv) ent += 'We deliver to the neighborhoods listed at checkout, ' + (envio ? 'with a delivery fee of ' + M.esc(M.fmt(envio)) + (g ? ' (free from ' + M.esc(M.fmt(g)) + ')' : '') : 'with no delivery fee') + '. The estimated time is ' + dMin + ' to ' + dMax + ' minutes and may vary with traffic and demand.';
+        if (pick) ent += (deliv ? ' If you prefer, you can' : 'You can') + ' pick up your order at the store at no cost; it is usually ready in about ' + pMin + ' minutes.';
+        if (c.programar && c.programar.activo) ent += ' You can also schedule your order for a later day and time.';
+        return '<h2>Orders and prices</h2><p>Prices are shown in Dominican pesos (' + M.esc(c.moneda || 'RD$') + ') and ' + itbisTx(true) + '. Your order is confirmed when the bank approves the payment; you will see your order number on screen and receive a WhatsApp message.</p>' +
+          '<h2>Delivery</h2><p>' + ent + '</p>' +
+          '<h2>Cancellations</h2><p>You can cancel at no charge as long as we have not started preparing your order. Message us on WhatsApp with your order number.</p>' +
+          '<h2>Refunds</h2><p>If your order arrives incomplete, wrong or damaged, write to us the same day with a photo and your order number. We will replace the product or refund the same card; the refund may take 7 to 15 business days to show, depending on your bank.</p>';
       }
     }
   };
@@ -1514,15 +1800,15 @@ Brinco._ui.isOpen = () => !!(root && root.classList.contains('bk-open'));
     var root = document.querySelector('[data-brinco="legal"]'); if (!root || root.dataset.bkDone) return;
     root.dataset.bkDone = '1';
     var key = root.getAttribute('data-doc'); if (!DOCS[key]) key = (location.pathname.match(/(seguridad|privacidad|terminos)/) || [])[1] || 'seguridad';
-    var D = DOCS[key], n = M.esc(M.name()), dom = M.esc(M.dominio());
+    var D = (M.en() ? DOCS_EN : DOCS)[key], n = M.esc(M.name()), dom = M.esc(M.dominio());
     document.documentElement.classList.add('bk-page', 'bk-white');
     document.title = D.t + ' | ' + M.name();
     var md = document.querySelector('meta[name="description"]');
     if (!md) { md = document.createElement('meta'); md.name = 'description'; document.head.appendChild(md); }
     if (!md.content) md.content = D.d(M.name());
     root.classList.add('bk-lg');
-    root.insertAdjacentHTML('beforebegin', M.header('Volver a la tienda', '/').replace('class="bk-hd"', 'class="bk-hd bk-hd-legal"'));
-    root.innerHTML = '<span class="bk-lg-tag">LEGAL</span><h1>' + D.t + '</h1><p class="bk-lg-upd">Última actualización: ' + UPD + '</p>' + D.body(n, dom) + contacto();
+    root.insertAdjacentHTML('beforebegin', M.header(T('hd_back'), '/').replace('class="bk-hd"', 'class="bk-hd bk-hd-legal"'));
+    root.innerHTML = '<span class="bk-lg-tag">LEGAL</span><h1>' + D.t + '</h1><p class="bk-lg-upd">' + (M.en() ? 'Last updated: ' + UPD_EN : 'Última actualización: ' + UPD) + '</p>' + D.body(n, dom) + contacto();
     root.insertAdjacentHTML('afterend', '<div class="bk-lg-foot">' + M.footer() + '</div>');
     M.fillVault(root.nextElementSibling);
   });
@@ -1568,13 +1854,8 @@ Brinco._ui.isOpen = () => !!(root && root.classList.contains('bk-open'));
    Monta en [data-brinco="panel"]. Lee brinco_events y brinco_orders de este equipo. */
 (function () {
   var M = window.__bkm; if (!M) return;
-  var LINKS = [
-    ['ig', 'Bio de Instagram · orgánico'],
-    ['ad', 'Anuncios de Meta · pagado'],
-    ['fb', 'Perfil de Facebook · orgánico'],
-    ['tt', 'Bio de TikTok · orgánico'],
-    ['wa', 'Estados y chats de WhatsApp · orgánico']
-  ];
+  var T = function (k, v) { return M.t(k, v); };
+  var LINKS = ['ig', 'ad', 'fb', 'tt', 'wa'];
   var BRAND = { visa: 'Visa', mastercard: 'MC', amex: 'Amex' };
   function pct(a, b) { return b ? Math.round(a * 1000 / b) / 10 + '%' : '—'; }
   function isPaid(m) { return m === 'pagado'; }
@@ -1583,30 +1864,30 @@ Brinco._ui.isOpen = () => !!(root && root.classList.contains('bk-open'));
   function shell(root) {
     var d = M.dominio();
     root.innerHTML =
-      '<h1 class="bk-pn-h1">Ventas y origen de clientes</h1>' +
-      '<p class="bk-pn-sub">De dónde llegan los clientes de ' + M.esc(M.short()) + ', cuántos compran y cuánto vende cada canal, orgánico y pagado.</p>' +
-      '<div class="bk-pn-seg" role="group" aria-label="Periodo">' +
-        '<button type="button" data-p="1" aria-pressed="false">Hoy</button><button type="button" data-p="7" aria-pressed="false">7 días</button>' +
-        '<button type="button" data-p="30" aria-pressed="false">30 días</button><button type="button" data-p="0" aria-pressed="true">Todo</button></div>' +
-      '<section class="bk-pn-kpis" aria-label="Resumen">' +
-        '<div class="bk-pn-k"><span>Clics en links</span><b data-k="clicks">0</b><small data-k="clicksS">&nbsp;</small></div>' +
-        '<div class="bk-pn-k"><span>Visitas</span><b data-k="visits">0</b><small data-k="visitsS">&nbsp;</small></div>' +
-        '<div class="bk-pn-k"><span>Compras</span><b data-k="buys">0</b><small data-k="conv">&nbsp;</small></div>' +
-        '<div class="bk-pn-k"><span>Ventas</span><b data-k="rev">' + M.fmt(0) + '</b><small data-k="aov">&nbsp;</small></div>' +
+      '<h1 class="bk-pn-h1">' + T('pn_h1') + '</h1>' +
+      '<p class="bk-pn-sub">' + T('pn_sub', { n: M.esc(M.short()) }) + '</p>' +
+      '<div class="bk-pn-seg" role="group" aria-label="' + T('pn_period') + '">' +
+        '<button type="button" data-p="1" aria-pressed="false">' + T('pn_today') + '</button><button type="button" data-p="7" aria-pressed="false">' + T('pn_7') + '</button>' +
+        '<button type="button" data-p="30" aria-pressed="false">' + T('pn_30') + '</button><button type="button" data-p="0" aria-pressed="true">' + T('pn_all') + '</button></div>' +
+      '<section class="bk-pn-kpis" aria-label="' + T('pn_summary') + '">' +
+        '<div class="bk-pn-k"><span>' + T('pn_clicks') + '</span><b data-k="clicks">0</b><small data-k="clicksS">&nbsp;</small></div>' +
+        '<div class="bk-pn-k"><span>' + T('pn_visits') + '</span><b data-k="visits">0</b><small data-k="visitsS">&nbsp;</small></div>' +
+        '<div class="bk-pn-k"><span>' + T('pn_buys') + '</span><b data-k="buys">0</b><small data-k="conv">&nbsp;</small></div>' +
+        '<div class="bk-pn-k"><span>' + T('pn_rev') + '</span><b data-k="rev">' + M.fmt(0) + '</b><small data-k="aov">&nbsp;</small></div>' +
       '</section>' +
       '<div class="bk-pn-grid2">' +
-        '<section class="bk-pn-card"><h2 class="bk-pn-h2">Embudo de compra</h2><div class="bk-pn-fun" data-k="funnel"></div>' +
-          '<div class="bk-pn-leg"><span><i class="bk-pn-o"></i>Orgánico</span><span><i class="bk-pn-pd"></i>Pagado (anuncios)</span></div>' +
-          '<p class="bk-pn-note">Cada paso cuenta personas (sesiones únicas), no clics repetidos.</p></section>' +
-        '<section class="bk-pn-card"><h2 class="bk-pn-h2">Orgánico vs. pagado</h2><div class="bk-pn-split" data-k="split"></div>' +
+        '<section class="bk-pn-card"><h2 class="bk-pn-h2">' + T('pn_funnel') + '</h2><div class="bk-pn-fun" data-k="funnel"></div>' +
+          '<div class="bk-pn-leg"><span><i class="bk-pn-o"></i>' + T('pn_org') + '</span><span><i class="bk-pn-pd"></i>' + T('pn_paidAds') + '</span></div>' +
+          '<p class="bk-pn-note">' + T('pn_people') + '</p></section>' +
+        '<section class="bk-pn-card"><h2 class="bk-pn-h2">' + T('pn_split') + '</h2><div class="bk-pn-split" data-k="split"></div>' +
           '<div class="bk-pn-bz" data-k="brinco"></div><div class="bk-pn-bz" data-k="pk"></div></section>' +
       '</div>' +
-      '<section class="bk-pn-card bk-pn-mt"><h2 class="bk-pn-h2">Por origen</h2><div class="bk-pn-scroll"><table class="bk-pn-tbl"><thead><tr><th>Origen</th><th>Tipo</th><th class="bk-pn-n">Visitas</th><th class="bk-pn-n">Carrito</th><th class="bk-pn-n">Pago</th><th class="bk-pn-n">Compras</th><th class="bk-pn-n">Ventas</th><th class="bk-pn-n">Conversión</th></tr></thead><tbody data-k="bySrc"></tbody></table></div></section>' +
-      '<section class="bk-pn-card bk-pn-mt"><h2 class="bk-pn-h2">Últimos pedidos</h2><div class="bk-pn-scroll"><table class="bk-pn-tbl"><thead><tr><th>Orden</th><th>Fecha</th><th>Cliente</th><th>Entrega</th><th>Pago</th><th>Origen</th><th class="bk-pn-n">Total</th></tr></thead><tbody data-k="orders"></tbody></table></div></section>' +
-      '<section class="bk-pn-card bk-pn-mt"><h2 class="bk-pn-h2">Tus links</h2><div class="bk-pn-links">' +
-        LINKS.map(function (l) { return '<div class="bk-pn-lk"><code>' + M.esc(d) + '/' + l[0] + '</code><small>' + l[1] + '</small></div>'; }).join('') +
+      '<section class="bk-pn-card bk-pn-mt"><h2 class="bk-pn-h2">' + T('pn_bySrc') + '</h2><div class="bk-pn-scroll"><table class="bk-pn-tbl"><thead><tr><th>' + T('pn_src') + '</th><th>' + T('pn_type') + '</th><th class="bk-pn-n">' + T('pn_visits') + '</th><th class="bk-pn-n">' + T('pn_cart') + '</th><th class="bk-pn-n">' + T('pn_pay') + '</th><th class="bk-pn-n">' + T('pn_buys') + '</th><th class="bk-pn-n">' + T('pn_rev') + '</th><th class="bk-pn-n">' + T('pn_conv') + '</th></tr></thead><tbody data-k="bySrc"></tbody></table></div></section>' +
+      '<section class="bk-pn-card bk-pn-mt"><h2 class="bk-pn-h2">' + T('pn_last') + '</h2><div class="bk-pn-scroll"><table class="bk-pn-tbl"><thead><tr><th>' + T('pn_order') + '</th><th>' + T('pn_date') + '</th><th>' + T('pn_client') + '</th><th>' + T('pn_deliv') + '</th><th>' + T('pn_pay') + '</th><th>' + T('pn_src') + '</th><th class="bk-pn-n">' + T('pn_tot') + '</th></tr></thead><tbody data-k="orders"></tbody></table></div></section>' +
+      '<section class="bk-pn-card bk-pn-mt"><h2 class="bk-pn-h2">' + T('pn_links') + '</h2><div class="bk-pn-links">' +
+        LINKS.map(function (l) { return '<div class="bk-pn-lk"><code>' + M.esc(d) + '/' + l + '</code><small>' + T('pn_l_' + l) + '</small></div>'; }).join('') +
       '</div></section>' +
-      '<p class="bk-pn-foot">Cada visita queda marcada con el link por donde entró, y cada pedido pagado guarda ese origen. Datos de este equipo.</p>';
+      '<p class="bk-pn-foot">' + T('pn_foot') + '</p>';
   }
 
   function render(root, days) {
@@ -1622,42 +1903,41 @@ Brinco._ui.isOpen = () => !!(root && root.classList.contains('bk-open'));
 
     $('clicks').textContent = clicks.length;
     var cp = clicks.filter(function (c) { return isPaid(c.med); }).length;
-    $('clicksS').textContent = clicks.length ? (clicks.length - cp) + ' orgánicos · ' + cp + ' pagados' : 'Aún sin clics';
+    $('clicksS').textContent = clicks.length ? T('pn_clicksS', { o: clicks.length - cp, p: cp }) : T('pn_noClicks');
     $('visits').textContent = visits.length;
-    $('visitsS').textContent = visits.length ? uniq(visits.map(function (v) { return v.src; })) + ' orígenes distintos' : ' ';
+    $('visitsS').textContent = visits.length ? T('pn_srcs', { n: uniq(visits.map(function (v) { return v.src; })) }) : ' ';
     $('buys').textContent = orders.length;
-    $('conv').textContent = 'Conversión ' + pct(buyers(), visitors());
+    $('conv').textContent = T('pn_convX', { x: pct(buyers(), visitors()) });
     var rev = orders.reduce(function (a, o) { return a + (o.total || 0); }, 0);
     $('rev').textContent = M.fmt(rev);
-    $('aov').textContent = orders.length ? 'Ticket promedio ' + M.fmt(rev / orders.length) : ' ';
+    $('aov').textContent = orders.length ? T('pn_aov', { x: M.fmt(rev / orders.length) }) : ' ';
 
     // Embudo: personas (sesiones únicas) por paso, divididas orgánico / pagado
-    var steps = [['Visitas', 'visita'], ['Agregaron al carrito', 'carrito'], ['Abrieron el pago', 'checkout'], ['Enviaron el pago', 'pago_enviado'], ['Compraron', 'compra']];
+    var steps = [[T('pn_f1'), 'visita'], [T('pn_f2'), 'carrito'], [T('pn_f3'), 'checkout'], [T('pn_f4'), 'pago_enviado'], [T('pn_f5'), 'compra']];
     var people = function (name, paid) { return uniq(ev.filter(function (e) { return e.e === name && isPaid(e.med) === paid; }).map(function (e) { return e.sid; })); };
     var top = Math.max.apply(null, [1].concat(steps.map(function (s) { return people(s[1], true) + people(s[1], false); })));
     $('funnel').innerHTML = steps.map(function (s) {
       var p = people(s[1], true), o = people(s[1], false);
-      return '<div class="bk-pn-fr"><span>' + s[0] + '</span><span class="bk-pn-track" role="img" aria-label="' + s[0] + ': ' + o + ' orgánico, ' + p + ' pagado"><i class="bk-pn-o" style="width:' + (o / top * 100) + '%"></i><i class="bk-pn-pd" style="width:' + (p / top * 100) + '%"></i></span><b>' + (p + o) + '</b></div>';
+      return '<div class="bk-pn-fr"><span>' + s[0] + '</span><span class="bk-pn-track" role="img" aria-label="' + T('pn_fAria', { s: s[0], o: o, p: p }) + '"><i class="bk-pn-o" style="width:' + (o / top * 100) + '%"></i><i class="bk-pn-pd" style="width:' + (p / top * 100) + '%"></i></span><b>' + (p + o) + '</b></div>';
     }).join('');
 
     var block = function (paid) {
       var v = count('visita', paid), b = orders.filter(function (x) { return isPaid(x.med) === paid; }), r = b.reduce(function (a, x) { return a + (x.total || 0); }, 0);
-      return '<div class="bk-pn-sp ' + (paid ? 'bk-pn-pd' : 'bk-pn-o') + '"><span class="bk-pn-pill ' + (paid ? 'bk-pn-pd' : 'bk-pn-o') + '">' + (paid ? 'Pagado' : 'Orgánico') + '</span>' +
-        '<div class="bk-pn-v">' + M.fmt(r) + '</div><div class="bk-pn-m">' + v + ' visitas · ' + b.length + ' compras<br>Conversión ' + pct(buyers(paid), visitors(paid)) + '</div></div>';
+      return '<div class="bk-pn-sp ' + (paid ? 'bk-pn-pd' : 'bk-pn-o') + '"><span class="bk-pn-pill ' + (paid ? 'bk-pn-pd' : 'bk-pn-o') + '">' + (paid ? T('pn_paid') : T('pn_org')) + '</span>' +
+        '<div class="bk-pn-v">' + M.fmt(r) + '</div><div class="bk-pn-m">' + T('pn_vb', { v: v, b: b.length }) + '<br>' + T('pn_convX', { x: pct(buyers(paid), visitors(paid)) }) + '</div></div>';
     };
     $('split').innerHTML = block(false) + block(true);
     var bz = orders.filter(function (o) { return o.via === 'brinco'; }).length, newAcc = orders.filter(function (o) { return o.brincoNew; }).length;
-    $('brinco').innerHTML = '<span class="bk-pn-bword">brinco</span><div class="bk-pn-m"><b>' + pct(bz, orders.length) + '</b> de las compras se pagaron con un toque en Brinco · ' + newAcc + ' cuenta' + (newAcc === 1 ? '' : 's') + ' Brinco nueva' + (newAcc === 1 ? '' : 's') + '</div>';
+    $('brinco').innerHTML = '<span class="bk-pn-bword">brinco</span><div class="bk-pn-m">' + T('pn_brinco', { x: pct(bz, orders.length), n: newAcc }) + '</div>';
 
     // Face ID / huella (passkeys)
     var act = ev.filter(function (e) { return e.e === 'passkey_activada'; });
     var logins = count('passkey_login'), fails = count('passkey_fallo');
     var kinds = {}; act.forEach(function (e) { var k = (e.d && e.d.tipo) || 'Face ID / huella'; kinds[k] = (kinds[k] || 0) + 1; });
     var here = M.get('brinco_passkey', null);
-    $('pk').innerHTML = '<span class="bk-pn-pk">Face ID / huella</span><div class="bk-pn-m"><b>' + act.length + '</b> activado' + (act.length === 1 ? '' : 's') +
-      (Object.keys(kinds).length ? ' (' + Object.keys(kinds).map(function (k) { return M.esc(k) + ': ' + kinds[k]; }).join(', ') + ')' : '') +
-      ' · <b>' + logins + '</b> entrada' + (logins === 1 ? '' : 's') + ' o pago' + (logins === 1 ? '' : 's') + ' con un toque · ' + fails + ' cancelado' + (fails === 1 ? '' : 's') +
-      '<br>Este equipo: ' + (here ? 'Face ID activo para ' + M.esc(M.fmtPhone(here.phone)) : 'sin Face ID') + '</div>';
+    $('pk').innerHTML = '<span class="bk-pn-pk">' + T('pn_pkT') + '</span><div class="bk-pn-m">' +
+      T('pn_pk', { a: act.length, k: Object.keys(kinds).length ? ' (' + Object.keys(kinds).map(function (k) { return M.esc(k) + ': ' + kinds[k]; }).join(', ') + ')' : '', l: logins, f: fails }) +
+      '<br>' + T('pn_here') + (here ? T('pn_hereOn', { x: M.esc(M.fmtPhone(here.phone)) }) : T('pn_hereOff')) + '</div>';
 
     // Por origen
     var srcs = {};
@@ -1666,17 +1946,17 @@ Brinco._ui.isOpen = () => !!(root && root.classList.contains('bk-open'));
     orders.forEach(function (o) { row(o.src, o.med).rev += o.total || 0; });
     var rows = Object.keys(srcs).map(function (k) { return srcs[k]; }).sort(function (a, b) { return b.rev - a.rev || b.visita - a.visita; });
     $('bySrc').innerHTML = rows.length ? rows.map(function (r) {
-      return '<tr><td>' + M.esc(r.src || 'Directo') + '</td><td><span class="bk-pn-pill ' + (isPaid(r.med) ? 'bk-pn-pd' : 'bk-pn-o') + '">' + (isPaid(r.med) ? 'Pagado' : 'Orgánico') + '</span></td><td class="bk-pn-n">' + r.visita + '</td><td class="bk-pn-n">' + r.carrito + '</td><td class="bk-pn-n">' + r.checkout + '</td><td class="bk-pn-n">' + r.compra + '</td><td class="bk-pn-n">' + M.fmt(r.rev) + '</td><td class="bk-pn-n">' + pct(Object.keys(r.bs).length, Object.keys(r.vs).length) + '</td></tr>';
-    }).join('') : '<tr><td colspan="8" class="bk-pn-empty">Todavía no hay visitas en este periodo.</td></tr>';
+      return '<tr><td>' + M.esc(r.src || T('pn_direct')) + '</td><td><span class="bk-pn-pill ' + (isPaid(r.med) ? 'bk-pn-pd' : 'bk-pn-o') + '">' + (isPaid(r.med) ? T('pn_paid') : T('pn_org')) + '</span></td><td class="bk-pn-n">' + r.visita + '</td><td class="bk-pn-n">' + r.carrito + '</td><td class="bk-pn-n">' + r.checkout + '</td><td class="bk-pn-n">' + r.compra + '</td><td class="bk-pn-n">' + M.fmt(r.rev) + '</td><td class="bk-pn-n">' + pct(Object.keys(r.bs).length, Object.keys(r.vs).length) + '</td></tr>';
+    }).join('') : '<tr><td colspan="8" class="bk-pn-empty">' + T('pn_noVisits') + '</td></tr>';
 
     var list = orders.slice().reverse().slice(0, 25);
     $('orders').innerHTML = list.length ? list.map(function (o) {
       var c = o.card || {};
-      return '<tr><td><a href="/pedido/?o=' + encodeURIComponent(o.no) + '"><b>' + M.esc(o.no) + '</b></a></td><td>' + new Date(o.at).toLocaleString('es-DO', { dateStyle: 'short', timeStyle: 'short' }) + '</td><td>' + M.esc(o.name) + '</td>' +
-        '<td>' + (o.mode === 'pickup' ? 'Recoger' : 'Delivery' + (o.address && o.address.sector ? ' · ' + M.esc(o.address.sector) : '')) + '</td>' +
-        '<td>' + (o.via === 'brinco' ? '<span class="bk-pn-pill bk-pn-brinco">Brinco</span> ' : '') + (BRAND[c.brand] || 'Tarjeta') + ' ' + M.esc(c.last4) + '</td>' +
-        '<td><span class="bk-pn-pill ' + (isPaid(o.med) ? 'bk-pn-pd' : 'bk-pn-o') + '">' + M.esc(o.src || 'Directo') + '</span></td><td class="bk-pn-n">' + M.fmt(o.total) + '</td></tr>';
-    }).join('') : '<tr><td colspan="7" class="bk-pn-empty">Todavía no hay pedidos en este periodo.</td></tr>';
+      return '<tr><td><a href="/pedido/?o=' + encodeURIComponent(o.no) + '"><b>' + M.esc(o.no) + '</b></a></td><td>' + new Date(o.at).toLocaleString(M.loc(), { dateStyle: 'short', timeStyle: 'short' }) + '</td><td>' + M.esc(o.name) + '</td>' +
+        '<td>' + (o.mode === 'pickup' ? T('pn_pickup') + (o.tienda && o.tienda.nombre && (M.cfg().tiendas || []).length > 1 ? ' · ' + M.esc(o.tienda.nombre) : '') : T('delivery') + (o.address && o.address.sector ? ' · ' + M.esc(o.address.sector) : '')) + '</td>' +
+        '<td>' + (o.via === 'brinco' ? '<span class="bk-pn-pill bk-pn-brinco">Brinco</span> ' : '') + (BRAND[c.brand] || T('card')) + ' ' + M.esc(c.last4) + '</td>' +
+        '<td><span class="bk-pn-pill ' + (isPaid(o.med) ? 'bk-pn-pd' : 'bk-pn-o') + '">' + M.esc(o.src || T('pn_direct')) + '</span></td><td class="bk-pn-n">' + M.fmt(o.total) + '</td></tr>';
+    }).join('') : '<tr><td colspan="7" class="bk-pn-empty">' + T('pn_noOrders') + '</td></tr>';
   }
 
   function wipe() {
@@ -1699,8 +1979,8 @@ Brinco._ui.isOpen = () => !!(root && root.classList.contains('bk-open'));
     root.dataset.bkDone = '1';
     root.classList.add('bk-pn');
     document.documentElement.classList.add('bk-page', 'bk-panel-page');
-    document.title = 'Panel ' + M.short() + ' · Ventas y origen';
-    var tools = '<div class="bk-pn-tools"><button type="button" data-bk="refresh">Actualizar</button><a href="/">Ver tienda</a><button type="button" data-bk="reset">Borrar datos</button></div>';
+    document.title = T('pn_title', { n: M.short() });
+    var tools = '<div class="bk-pn-tools"><button type="button" data-bk="refresh">' + T('pn_refresh') + '</button><a href="/">' + T('pn_shop') + '</a><button type="button" data-bk="reset">' + T('pn_reset') + '</button></div>';
     root.insertAdjacentHTML('beforebegin', M.header('', '', tools).replace('class="bk-hd"', 'class="bk-hd bk-hd-wide"'));
     shell(root);
     var hd = root.previousElementSibling;
@@ -1713,10 +1993,10 @@ Brinco._ui.isOpen = () => !!(root && root.classList.contains('bk-open'));
         go();
       });
     });
-    hd.querySelector('[data-bk="refresh"]').addEventListener('click', function () { go(); M.toast('Panel actualizado'); });
+    hd.querySelector('[data-bk="refresh"]').addEventListener('click', function () { go(); M.toast(T('pn_updated')); });
     hd.querySelector('[data-bk="reset"]').addEventListener('click', function () {
-      if (!confirm('¿Borrar las estadísticas, pedidos y cuentas Brinco guardados en este equipo?')) return;
-      wipe(); go(); M.toast('Datos borrados');
+      if (!confirm(T('pn_confirm'))) return;
+      wipe(); go(); M.toast(T('pn_wiped'));
     });
     window.addEventListener('storage', go);
     go();
@@ -1735,7 +2015,11 @@ Brinco._ui.isOpen = () => !!(root && root.classList.contains('bk-open'));
     { name: 'Yeison Peña', moto: 'Yamaha negra · K301774', ini: 'YP' },
     { name: 'Carlos Abreu', moto: 'Suzuki roja · N552390', ini: 'CA' }
   ];
-  function rider(o) { var h = 0; String(o.no).split('').forEach(function (c) { h = (h * 31 + c.charCodeAt(0)) >>> 0; }); return RIDERS[h % RIDERS.length]; }
+  var MOTO_EN = { 'Honda roja': 'Red Honda', 'Yamaha negra': 'Black Yamaha', 'Suzuki roja': 'Red Suzuki' };
+  function rider(o) { var h = 0; String(o.no).split('').forEach(function (c) { h = (h * 31 + c.charCodeAt(0)) >>> 0; }); var r = RIDERS[h % RIDERS.length];
+    var m = r.moto.split(' · '); return { name: r.name, ini: r.ini, moto: M.en() ? (MOTO_EN[m[0]] || m[0]) + ' · ' + m[1] : r.moto }; }
+  var T = function (k, v) { return M.t(k, v); };
+  function nota(it) { return it.nota ? '<small class="bk-nota">“' + M.esc(it.nota) + '”</small>' : ''; }
   var CHECK = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
   var I_PHONE = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></svg>';
   var I_WA = '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Z"/></svg>';
@@ -1751,7 +2035,8 @@ Brinco._ui.isOpen = () => !!(root && root.classList.contains('bk-open'));
   }
   function status(o) { return O().status(o); }
   function ent() { var e = M.cfg().entrega || {}; return { dMin: e.deliveryMin || 35, dMax: e.deliveryMax || 45, pMin: e.pickupMin || 20 }; }
-  function tienda() { return M.cfg().tienda || {}; }
+  var CUR = null;   // pedido que se está mostrando (para su tienda)
+  function tienda() { var O_ = O(); return O_ && O_.store ? O_.store(CUR) : (M.cfg().tienda || {}); }
   function mapsUrl() {
     var t = tienda(); if (t.mapa) return t.mapa;
     var q = [t.direccion, t.ciudad || 'Santo Domingo'].filter(Boolean).join(', ');
@@ -1761,15 +2046,15 @@ Brinco._ui.isOpen = () => !!(root && root.classList.contains('bk-open'));
   // etapas.salida: "de la barra", "del horno"… (opcional)
   function waitText() {
     var sal = String((M.cfg().etapas || {}).salida || '').trim().replace(/[.\s]+$/, '');
-    return 'Te asignamos un rider en cuanto tu pedido ' + (sal ? 'salga ' + M.esc(sal) : 'esté listo') + '.';
+    return T('p_wait', { x: sal && !M.en() ? T('p_waitOut', { x: M.esc(sal) }) : T('p_waitReady') });
   }
   function isRoad(s) { return s && (s.k === 'camino' || /camino/i.test(s.label || '')); }
 
   function mapSVG(o) {
     var pick = o.mode === 'pickup';
-    var st = streetLabel(tienda().direccion) || 'Tu tienda';
+    var st = streetLabel(tienda().direccion) || T('p_yourStore');
     var home = pick ? '' : streetLabel(o.address && o.address.street);
-    return '<svg viewBox="0 0 640 400" role="img" aria-label="' + (pick ? 'Ubicación de la tienda' : 'Ruta de tu pedido') + '">' +
+    return '<svg viewBox="0 0 640 400" role="img" aria-label="' + (pick ? T('p_mapStore') : T('p_mapRoute')) + '">' +
       '<rect width="640" height="400" fill="#F3EEE9"/>' +
       '<g fill="#E8E0D9"><rect x="0" y="0" width="50" height="150"/><rect x="90" y="0" width="80" height="150"/><rect x="210" y="0" width="100" height="75"/><rect x="350" y="0" width="85" height="130"/><rect x="475" y="0" width="165" height="50"/><rect x="475" y="90" width="165" height="120"/><rect x="0" y="190" width="50" height="210"/><rect x="90" y="190" width="220" height="80"/><rect x="350" y="170" width="85" height="100"/><rect x="90" y="300" width="400" height="100"/><rect x="520" y="230" width="120" height="170"/></g>' +
       '<rect x="210" y="115" width="100" height="35" rx="6" fill="#D9EDD3"/><rect x="350" y="300" width="70" height="60" rx="6" fill="#D9EDD3"/>' +
@@ -1797,65 +2082,71 @@ Brinco._ui.isOpen = () => !!(root && root.classList.contains('bk-open'));
   function renderOrder(root, o) {
     var app = root.querySelector('.bk-p-app');
     M.track('seguimiento', { orden: o.no });
-    M.setTitle('Pedido ' + o.no);
+    CUR = o;
+    M.setTitle(T('p_order', { no: o.no }));
     var r = rider(o), e = ent(), pick = o.mode === 'pickup', t = tienda(), c = M.cfg();
+    var sched = o.programado ? Date.parse(o.programado) : 0;
     var card = o.card || {};
     var itemsHtml = (o.items || []).map(function (it) {
-      return '<div class="bk-p-l"><span>' + it.qty + ' × ' + M.esc(it.name) + (it.detail ? ' <small>· ' + M.esc(it.detail) + '</small>' : '') + '</span><span>' + M.fmt(it.qty * it.unit) + '</span></div>';
+      return '<div class="bk-p-l"><span>' + it.qty + ' × ' + M.esc(it.name) + (it.detail ? ' <small>· ' + M.esc(it.detail) + '</small>' : '') + nota(it) + '</span><span>' + M.fmt(it.qty * it.unit) + '</span></div>';
     }).join('');
     var place = pick
-      ? '<div class="bk-p-rider"><span class="bk-p-av">' + M.esc(M.short().charAt(0).toUpperCase()) + '</span><div class="bk-p-tx"><b>' + M.esc(M.short()) + '</b><span>' + M.esc(t.direccion || 'Nuestra tienda') + ' · Lista en ' + e.pMin + ' min</span></div>' +
-        '<a class="bk-p-ib" href="' + M.esc(mapsUrl()) + '" target="_blank" rel="noopener" aria-label="Cómo llegar">' + I_GO + '</a></div>' +
-        '<a class="bk-p-btn bk-p-ghost bk-p-dir" href="' + M.esc(mapsUrl()) + '" target="_blank" rel="noopener">Cómo llegar</a>'
+      ? '<div class="bk-p-rider"><span class="bk-p-av">' + M.esc(M.short().charAt(0).toUpperCase()) + '</span><div class="bk-p-tx"><b>' + M.esc(t.nombre || M.short()) + '</b><span>' + M.esc(t.direccion || T('p_store')) + (sched ? '' : ' · ' + T('p_readyIn', { a: e.pMin })) + '</span></div>' +
+        '<a class="bk-p-ib" href="' + M.esc(mapsUrl()) + '" target="_blank" rel="noopener" aria-label="' + T('p_dir') + '">' + I_GO + '</a></div>' +
+        '<a class="bk-p-btn bk-p-ghost bk-p-dir" href="' + M.esc(mapsUrl()) + '" target="_blank" rel="noopener">' + T('p_dir') + '</a>'
       : '<div class="bk-p-rider" data-bk-rider hidden><span class="bk-p-av">' + r.ini + '</span><div class="bk-p-tx"><b>' + r.name + '</b><span>' + r.moto + '</span></div>' +
-        '<button class="bk-p-ib" type="button" data-act="llamar" aria-label="Llamar a ' + r.name + '">' + I_PHONE + '</button>' +
-        '<button class="bk-p-ib bk-p-wa" type="button" data-act="whatsapp" aria-label="Escribir por WhatsApp a ' + r.name + '">' + I_WA + '</button></div>' +
+        '<button class="bk-p-ib" type="button" data-act="llamar" aria-label="' + M.esc(T('p_call', { n: r.name })) + '">' + I_PHONE + '</button>' +
+        '<button class="bk-p-ib bk-p-wa" type="button" data-act="whatsapp" aria-label="' + M.esc(T('p_waTo', { n: r.name })) + '">' + I_WA + '</button></div>' +
         '<p class="bk-p-sub bk-p-wait" data-bk-wait>' + waitText() + '</p>';
     app.innerHTML =
-      '<h1 class="bk-p-h1">Tu pedido</h1>' +
-      '<p class="bk-p-sub">Hecho a las ' + M.hhmm(o.at) + ' · ' + (pick ? 'Recoger en tienda' : 'Delivery') + '</p>' +
+      '<h1 class="bk-p-h1">' + T('p_your') + '</h1>' +
+      '<p class="bk-p-sub">' + T('p_madeAt', { h: M.hhmm(o.at) }) + ' · ' + (pick ? T('pickup') : T('delivery')) + '</p>' +
+      (sched ? '<p class="bk-p-sched">' + M.esc(T('scheduledFor', { x: M.when(sched) })) + '</p>' : '') +
       '<section class="bk-p-card" aria-live="polite">' +
-        '<div class="bk-p-head"><span class="bk-p-no">Orden ' + M.esc(o.no) + '</span><span class="bk-p-pill" data-bk="pill"></span></div>' +
+        '<div class="bk-p-head"><span class="bk-p-no">' + T('order') + ' ' + M.esc(o.no) + '</span><span class="bk-p-pill" data-bk="pill"></span></div>' +
         '<p class="bk-p-big" data-bk="big"></p><p class="bk-p-eta" data-bk="eta"></p>' +
         '<div class="bk-p-prog" aria-hidden="true"><i data-bk="bar"></i></div>' +
         '<ol class="bk-p-steps" data-bk="steps"></ol>' +
       '</section>' +
-      '<section class="bk-p-card"><h2 class="bk-p-h2">' + (pick ? 'Dónde recoger' : 'Tu rider') + '</h2><div class="bk-p-map">' + mapSVG(o) + '</div>' + place + '</section>' +
-      '<section class="bk-p-card bk-p-rec"><h2 class="bk-p-h2">Detalle</h2>' + itemsHtml +
-        '<div class="bk-p-l bk-p-mut"><span>' + (pick ? 'Recoger en tienda' : 'Envío') + '</span><span>' + (o.ship ? M.fmt(o.ship) : 'Gratis') + '</span></div>' +
-        (o.discount ? '<div class="bk-p-l bk-p-mut"><span>Descuento</span><span>−' + M.fmt(o.discount) + '</span></div>' : '') +
-        '<div class="bk-p-l bk-p-tot"><span>Total pagado</span><span>' + M.fmt(o.total) + '</span></div>' +
-        '<div class="bk-p-meta">' + (o.via === 'brinco' ? 'Pagado con Brinco · ' : '') + (BRANDS[card.brand] || 'Tarjeta') + ' •••• ' + M.esc(card.last4) +
-          (o.auth ? ' · Autorización ' + M.esc(o.auth) : '') +
-          (o.address && !pick ? '<br>Entrega: ' + M.esc(o.address.street) + (o.address.sector ? ', ' + M.esc(o.address.sector) : '') : '') +
-          (o.phone ? '<br>WhatsApp: ' + M.esc(M.fmtPhone(o.phone)) : '') + '</div>' +
+      '<section class="bk-p-card"><h2 class="bk-p-h2">' + (pick ? T('p_where') : T('p_rider')) + '</h2><div class="bk-p-map">' + mapSVG(o) + '</div>' + place + '</section>' +
+      '<section class="bk-p-card bk-p-rec"><h2 class="bk-p-h2">' + T('p_detail') + '</h2>' + itemsHtml +
+        '<div class="bk-p-l bk-p-mut"><span>' + (pick ? T('pickup') : T('ship')) + '</span><span>' + (o.ship ? M.fmt(o.ship) : T('free')) + '</span></div>' +
+        ((o.disc || o.discount) ? '<div class="bk-p-l bk-p-mut"><span>' + (o.coupon ? T('coupon') + ' ' + M.esc(o.coupon) : T('p_discount')) + '</span><span>−' + M.fmt(o.disc || o.discount) + '</span></div>' : '') +
+        (o.itbis ? '<div class="bk-p-l bk-p-mut"><span>' + T('itbisLine', { p: Math.round((o.itbisTasa || 0.18) * 100) }) + '</span><span>' + M.fmt(o.itbis) + '</span></div>' : '') +
+        '<div class="bk-p-l bk-p-tot"><span>' + T('p_total') + '</span><span>' + M.fmt(o.total) + '</span></div>' +
+        '<div class="bk-p-meta">' + (o.via === 'brinco' ? T('p_paidB') : '') + (BRANDS[card.brand] || T('card')) + ' •••• ' + M.esc(card.last4) +
+          (o.auth ? ' · ' + T('p_auth') + ' ' + M.esc(o.auth) : '') +
+          (o.address && !pick ? '<br>' + T('p_deliver') + ': ' + M.esc(o.address.street) + (o.address.sector ? ', ' + M.esc(o.address.sector) : '') : '') +
+          (pick && o.tienda && o.tienda.nombre ? '<br>' + T('pickAt') + ': ' + M.esc(o.tienda.nombre) + (o.tienda.direccion ? ', ' + M.esc(o.tienda.direccion) : '') : '') +
+          (o.phone ? '<br>' + T('p_wa') + ': ' + M.esc(M.fmtPhone(o.phone)) : '') + '</div>' +
       '</section>' +
-      '<div class="bk-p-help"><a class="bk-p-btn bk-p-ghost" href="/pedido/">Mis pedidos</a><button class="bk-p-btn bk-p-ghost" type="button" data-bk="help">¿Algún problema?</button></div>';
+      '<div class="bk-p-help"><a class="bk-p-btn bk-p-ghost" href="/pedido/">' + T('p_mine') + '</a><button class="bk-p-btn bk-p-ghost" type="button" data-bk="help">' + T('p_help') + '</button></div>';
     app.querySelectorAll('[data-act]').forEach(function (b) {
       b.addEventListener('click', function () {
         M.track('contacto_rider', { orden: o.no, via: b.dataset.act });
         var n = r.name.split(' ')[0];
-        M.toast(b.dataset.act === 'llamar' ? 'Llamando a ' + n + '…' : 'Abriendo chat con ' + n + '…');
+        M.toast(b.dataset.act === 'llamar' ? T('p_calling', { n: n }) : T('p_chat', { n: n }));
       });
     });
-    app.querySelector('[data-bk="help"]').addEventListener('click', function () { M.track('ayuda_pedido', { orden: o.no }); M.toast('Te escribimos por WhatsApp en un momento'); });
+    app.querySelector('[data-bk="help"]').addEventListener('click', function () { M.track('ayuda_pedido', { orden: o.no }); M.toast(T('p_helpMsg')); });
     var last = null;
     function tick() {
       var s = status(o); if (!s || !s.stage) return;
       var q = function (k) { return app.querySelector('[data-bk="' + k + '"]'); };
       q('big').textContent = s.stage.label;
       var pill = q('pill');
-      pill.textContent = s.done ? (pick ? 'Recogido' : 'Entregado') : 'En proceso';
+      pill.textContent = s.done ? (pick ? T('p_picked') : T('p_delivered')) : (s.stage.k === 'programado' ? T('p_scheduled') : T('p_inProc'));
       pill.className = 'bk-p-pill' + (s.done ? ' bk-p-done' : '');
       var eta = q('eta');
       if (s.done) eta.textContent = s.stage.txt || '';
-      else if (pick) eta.innerHTML = M.esc(s.stage.txt) + '<br><b>Lista aprox. ' + M.hhmm(o.at + e.pMin * 60000) + '</b>';
-      else eta.innerHTML = M.esc(s.stage.txt) + '<br><b>Llega entre ' + M.hhmm(o.at + e.dMin * 60000) + ' y ' + M.hhmm(o.at + e.dMax * 60000) + '</b>';
+      else if (sched) eta.innerHTML = M.esc(s.stage.txt) + '<br><b>' + M.esc(T('scheduledFor', { x: M.when(sched) })) + '</b>';
+      else if (pick) eta.innerHTML = M.esc(s.stage.txt) + '<br><b>' + T('p_readyAt', { h: M.hhmm(o.at + e.pMin * 60000) }) + '</b>';
+      else eta.innerHTML = M.esc(s.stage.txt) + '<br><b>' + T('p_arrives', { a: M.hhmm(o.at + e.dMin * 60000), b: M.hhmm(o.at + e.dMax * 60000) }) + '</b>';
       q('bar').style.width = Math.round(Math.min(1, s.total) * 100) + '%';
       q('steps').innerHTML = (s.stages || []).map(function (x, j) {
         var cls = j < s.i || (s.done && j === s.i) ? 'bk-p-ok' : j === s.i ? 'bk-p-now' : 'bk-p-next';
         return '<li class="' + cls + '"><span class="bk-p-dot">' + (cls === 'bk-p-ok' ? CHECK : '') + '</span><div class="bk-p-st"><b>' + M.esc(x.label) + '</b>' +
-          (cls !== 'bk-p-next' ? '<time>' + M.hhmm(o.at + x.t * 1000) + '</time>' : '') + (cls === 'bk-p-now' ? '<span>' + M.esc(x.txt) + '</span>' : '') + '</div></li>';
+          (cls !== 'bk-p-next' || sched ? '<time>' + M.hhmm(x.at || o.at + x.t * 1000) + '</time>' : '') + (cls === 'bk-p-now' ? '<span>' + M.esc(x.txt) + '</span>' : '') + '</div></li>';
       }).join('');
       var box = app.querySelector('[data-bk-rider]'), wait = app.querySelector('[data-bk-wait]');
       if (box) { var on = isRoad(s.stage) || s.done; box.hidden = !on; wait.hidden = on; }
@@ -1870,30 +2161,30 @@ Brinco._ui.isOpen = () => !!(root && root.classList.contains('bk-open'));
 
   function renderList(root, msg) {
     var app = root.querySelector('.bk-p-app');
-    M.setTitle('Sigue tu pedido');
+    M.setTitle(T('p_track'));
     var list = allOrders().slice(0, 10);
     var pre = (M.cfg().prefijoOrden || 'XX') + '-12345';
     app.innerHTML =
-      '<h1 class="bk-p-h1">Sigue tu pedido</h1><p class="bk-p-sub">Mira en qué va tu pedido, en vivo.</p>' +
-      '<section class="bk-p-card"><h2 class="bk-p-h2">Mis pedidos</h2>' +
+      '<h1 class="bk-p-h1">' + T('p_track') + '</h1><p class="bk-p-sub">' + T('p_trackSub') + '</p>' +
+      '<section class="bk-p-card"><h2 class="bk-p-h2">' + T('p_mine') + '</h2>' +
       (list.length ? '<div class="bk-p-list">' + list.map(function (o) {
         var s = status(o) || { stage: { label: '' } }, n = (o.items || []).reduce(function (a, c) { return a + c.qty; }, 0);
         return '<a href="/pedido/?o=' + encodeURIComponent(o.no) + '"><div><b>' + M.esc(o.no) + ' · ' + M.fmt(o.total) + '</b><span>' +
-          new Date(o.at).toLocaleDateString('es-DO', { day: 'numeric', month: 'short' }) + ', ' + M.hhmm(o.at) + ' · ' + n + ' ' + M.esc(M.producto(n)) + '</span></div>' +
+          new Date(o.at).toLocaleDateString(M.loc(), { day: 'numeric', month: 'short' }) + ', ' + M.hhmm(o.at) + ' · ' + n + ' ' + M.esc(M.producto(n)) + '</span></div>' +
           '<span class="bk-p-pill' + (s.done ? ' bk-p-done' : '') + '">' + M.esc(s.stage.label) + '</span></a>';
-      }).join('') + '</div>' : '<p class="bk-p-empty">Todavía no tienes pedidos en este celular.</p>') +
+      }).join('') + '</div>' : '<p class="bk-p-empty">' + T('p_none') + '</p>') +
       '</section>' +
-      '<section class="bk-p-card"><h2 class="bk-p-h2">Buscar un pedido</h2><form class="bk-p-form" novalidate>' +
-        '<label for="bkNo">Número de orden</label><input id="bkNo" name="no" inputmode="text" autocapitalize="characters" placeholder="' + M.esc(pre) + '" autocomplete="off">' +
-        '<label for="bkPh">Tu WhatsApp</label><input id="bkPh" name="ph" type="tel" inputmode="tel" placeholder="809-555-1234" autocomplete="tel">' +
+      '<section class="bk-p-card"><h2 class="bk-p-h2">' + T('p_find') + '</h2><form class="bk-p-form" novalidate>' +
+        '<label for="bkNo">' + T('p_no') + '</label><input id="bkNo" name="no" inputmode="text" autocapitalize="characters" placeholder="' + M.esc(pre) + '" autocomplete="off">' +
+        '<label for="bkPh">' + T('p_ph') + '</label><input id="bkPh" name="ph" type="tel" inputmode="tel" placeholder="809-555-1234" autocomplete="tel">' +
         (msg ? '<p class="bk-p-err" role="alert">' + M.esc(msg) + '</p>' : '') +
-        '<button class="bk-p-btn" type="submit">Ver mi pedido</button></form></section>' +
-      '<div class="bk-p-help"><a class="bk-p-btn bk-p-ghost" href="/">Hacer un pedido</a></div>';
+        '<button class="bk-p-btn" type="submit">' + T('p_see') + '</button></form></section>' +
+      '<div class="bk-p-help"><a class="bk-p-btn bk-p-ghost" href="/">' + T('p_make') + '</a></div>';
     app.querySelector('form').addEventListener('submit', function (ev) {
       ev.preventDefault();
       var o = findOrder(app.querySelector('#bkNo').value);
       var ph = M.digits(app.querySelector('#bkPh').value).slice(-7);
-      if (!o || (ph && M.digits(o.phone).slice(-7) !== ph)) { renderList(root, 'No encontramos ese pedido. Revisa el número de orden que te llegó por WhatsApp.'); return; }
+      if (!o || (ph && M.digits(o.phone).slice(-7) !== ph)) { renderList(root, T('p_notFound')); return; }
       location.href = '/pedido/?o=' + encodeURIComponent(o.no);
     });
   }
@@ -1902,15 +2193,15 @@ Brinco._ui.isOpen = () => !!(root && root.classList.contains('bk-open'));
     var root = document.querySelector('[data-brinco="pedido"]'); if (!root || root.dataset.bkDone) return;
     root.dataset.bkDone = '1';
     root.classList.add('bk-p');
-    root.insertAdjacentHTML('beforebegin', M.header('Pedir de nuevo', '/'));
+    root.insertAdjacentHTML('beforebegin', M.header(T('p_orderAgain'), '/'));
     root.innerHTML = '<div class="bk-p-app bk-p-wrap"></div>';
     root.insertAdjacentHTML('afterend', '<div class="bk-p bk-p-wrap">' + M.footer() + '</div>');
     document.documentElement.classList.add('bk-page');
     M.fillVault(root.nextElementSibling);
-    if (!O() || !O().status) { root.querySelector('.bk-p-app').innerHTML = '<p class="bk-p-empty">No pudimos cargar tus pedidos. Recarga la página.</p>'; return; }
+    if (!O() || !O().status) { root.querySelector('.bk-p-app').innerHTML = '<p class="bk-p-empty">' + T('p_loadErr') + '</p>'; return; }
     var q = new URLSearchParams(location.search).get('o');
     var o = q ? findOrder(q) : null;
-    if (o) renderOrder(root, o); else renderList(root, q ? 'No encontramos ese pedido en este celular.' : '');
+    if (o) renderOrder(root, o); else renderList(root, q ? T('p_notHere') : '');
   });
 })();
 })();
@@ -1923,7 +2214,7 @@ Brinco._ui.isOpen = () => !!(root && root.classList.contains('bk-open'));
   var M = window.__bkm; if (!M) return;
 
   // Palabra corta para que quepa en 360 px (la etapa completa va en aria-label y en /pedido/)
-  var SHORT = { recibido: 'Recibido', preparando: 'Preparando', coccion: 'Preparando', camino: 'En camino', entregado: 'Entregado', lista: 'Lista', recogido: 'Entregado' };
+  function short(k) { var x = M.t('pill_' + k); return x === 'pill_' + k ? '' : x; }
   function sheetOpen() {
     var h = document.documentElement;
     if (h.classList.contains('bk-open') || h.classList.contains('bk-lock')) return true;
@@ -1957,17 +2248,20 @@ Brinco._ui.isOpen = () => !!(root && root.classList.contains('bk-open'));
     var B = window.Brinco; if (!B || !B.orders || !B.orders.active) return;
     var a = document.createElement('a');
     a.className = 'bk-pill'; a.setAttribute('aria-live', 'polite'); a.setAttribute('aria-hidden', 'true'); a.tabIndex = -1;
-    a.innerHTML = '<i aria-hidden="true"></i><span><em class="bk-pill-pre">Tu pedido </em><span class="bk-pill-tx"></span></span><b>Ver</b>';
+    a.innerHTML = '<i aria-hidden="true"></i><span><em class="bk-pill-pre"></em><span class="bk-pill-tx"></span></span><b></b>';
     document.body.appendChild(a);
     function upd() {
       var o = null; try { o = B.orders.active(); } catch (e) {}
       if (!o || sheetOpen() || siteOverlay()) { if (a.classList.contains('bk-show')) { a.classList.remove('bk-show'); a.setAttribute('aria-hidden', 'true'); a.tabIndex = -1; } return; }
       var s = null; try { s = B.orders.status(o); } catch (e) {}
       var hr = '/pedido/?o=' + encodeURIComponent(o.no); if (a.getAttribute('href') !== hr) a.setAttribute('href', hr);
-      var word = s && s.stage ? (SHORT[s.stage.k] || s.stage.label) : '';
+      var pre = M.t('pill_your'), see = M.t('pill_see');
+      if (a.querySelector('em').textContent !== pre) a.querySelector('em').textContent = pre;
+      if (a.querySelector('b').textContent !== see) a.querySelector('b').textContent = see;
+      var word = s && s.stage ? (short(s.stage.k) || s.stage.label) : '';
       var txt = o.no + (word ? ' · ' + word : '');
       var span = a.querySelector('.bk-pill-tx'); if (span.textContent !== txt) span.textContent = txt;
-      var lbl = 'Tu pedido ' + o.no + (s && s.stage ? ', ' + s.stage.label : '') + '. Ver pedido'; if (a.getAttribute('aria-label') !== lbl) a.setAttribute('aria-label', lbl);
+      var lbl = M.t('pill_aria', { no: o.no, st: s && s.stage ? ', ' + s.stage.label : '' }); if (a.getAttribute('aria-label') !== lbl) a.setAttribute('aria-label', lbl);
       if (!a.classList.contains('bk-show')) { a.classList.add('bk-show'); a.removeAttribute('aria-hidden'); a.tabIndex = 0; }
     }
     M.pill = upd;
@@ -2005,13 +2299,12 @@ function boot() {
     watchVaultFooters();
     document.documentElement.classList.add('bk-ready');
     fireReady();
-    // Llegó desde Instagram/Facebook con ?bk=pk (para activar Face ID en Safari/Chrome)
+    // ?bk=pk (links viejos de v1.0): se quita de la URL sin hacer nada más
     try {
       const q = new URLSearchParams(location.search);
       if (q.has('bk')) {
         q.delete('bk');
         history.replaceState(history.state, '', location.pathname + (q.toString() ? '?' + q : '') + location.hash);
-        if (!INAPP && B.session()) setTimeout(() => toast(t('pkHint', { x: PK.t('name') }), 5000), 600);
       }
     } catch (e) {}
     try { window.dispatchEvent(new CustomEvent('brinco:ready', { detail: Brinco.config })); } catch (e) {}

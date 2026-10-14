@@ -212,6 +212,13 @@
   .bk-toast,.bk-wa,.bk-toast.bk-show,.bk-wa.bk-show{transition:none}
 }
 
+/* v1.1: nota del producto, envío gratis, programar */
+.bk-nota{display:block;font-style:italic;color:var(--bk-muted);font-size:12.5px;margin-top:2px;overflow-wrap:anywhere}
+.bk-free{margin:2px 0 0;font-size:13px;color:var(--bk-muted);text-align:center}
+.bk-free.bk-free-ok{color:#1E8E4E;font-weight:600}
+.bk-p-sched{margin:4px 0 0;font-weight:600;color:var(--bk-brand-text)}
+.bk-when .bk-row2{grid-template-columns:1.5fr 1fr}
+
 /* --- src/css/header.css --- */
 /* Brinco Kit · módulos: página base, encabezado fijo, pie, toast y aviso WhatsApp de respaldo */
 html.bk-page body{margin:0;background:var(--bk-bg,#FFF7F2);color:var(--bk-ink,#241A17);font-family:var(--bk-font-body,system-ui),system-ui,sans-serif;-webkit-font-smoothing:antialiased;overflow-x:hidden}
