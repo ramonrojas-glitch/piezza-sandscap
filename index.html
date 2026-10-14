@@ -193,6 +193,18 @@ body.cart-open{overflow:hidden}
 .size{width:52px;height:52px}
 }
 @media (prefers-reduced-motion:reduce){.pizza{animation:none}.pz,.tx,.drawer,.scrim{transition:none}}
+
+/* Encabezado fijo: siempre visible al hacer scroll (carrito y menú a mano) */
+.nav{position:fixed;top:0;left:0;right:0;z-index:30;max-width:1360px;margin:0 auto;transition:padding .25s ease}
+.nav::before{content:"";position:absolute;top:0;bottom:0;left:calc(50% - 50vw);width:100vw;background:rgba(255,255,255,.94);-webkit-backdrop-filter:saturate(1.4) blur(10px);backdrop-filter:saturate(1.4) blur(10px);box-shadow:0 1px 0 #F1E6E2;opacity:0;transition:opacity .25s,box-shadow .25s;z-index:-1}
+.nav.scrolled::before{opacity:1;box-shadow:0 8px 24px -18px rgba(90,10,18,.45),0 1px 0 #F1E6E2}
+.navspace{height:100px;flex:none}
+html{scroll-padding-top:96px}
+.added{position:absolute;top:calc(100% + 10px);right:0;white-space:nowrap;background:#241A17;color:#fff;border-radius:999px;padding:7px 12px;font:600 13px Poppins,system-ui,sans-serif;display:flex;align-items:center;gap:6px;opacity:0;transform:translateY(-6px);transition:opacity .2s,transform .2s;pointer-events:none}
+.added.show{opacity:1;transform:none}
+.added::before{content:"";position:absolute;top:-5px;right:18px;width:10px;height:10px;background:#241A17;transform:rotate(45deg)}
+@media (max-width:760px){.nav{position:fixed}.navspace{order:0}}
+@media (prefers-reduced-motion:reduce){.nav,.nav::before,.added{transition:none}}
 </style>
 <script src="/track.js"></script>
 <link rel="stylesheet" href="/checkout.css">
@@ -216,6 +228,7 @@ body.cart-open{overflow:hidden}
 <button class="cartbtn" id="cartBtn" type="button" aria-label="Abrir carrito, 0 artículos" aria-controls="drawer" aria-expanded="false">
 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h2l2.4 11.2a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.1L21 8H6.2"/><circle cx="9.5" cy="20" r="1.3"/><circle cx="17.5" cy="20" r="1.3"/></svg>
 <span class="badge" id="badge" hidden>0</span>
+<span class="added" id="added" role="status" aria-live="polite"></span>
 </button>
 <button class="menubtn" id="menuBtn" type="button" aria-label="Abrir menú" aria-expanded="false" aria-controls="mnav">
 <svg id="menuIco" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
@@ -228,6 +241,7 @@ body.cart-open{overflow:hidden}
 <a href="/pedido/">Sigue tu pedido</a>
 </nav>
 </header>
+<div class="navspace" id="navspace" aria-hidden="true"></div>
 
 <svg class="deco hide-sm" style="left:2.5%;top:190px;width:62px;height:62px" viewBox="0 0 70 70" aria-hidden="true"><circle cx="35" cy="35" r="30" fill="#E23A2E"/><circle cx="35" cy="35" r="24" fill="#F05A45"/><path d="M35 35 L35 13 M35 35 L54 46 M35 35 L16 46" stroke="#F7B59E" stroke-width="3"/><ellipse cx="35" cy="22" rx="3" ry="5" fill="#FBE3B6"/><ellipse cx="45" cy="41" rx="3" ry="5" fill="#FBE3B6" transform="rotate(120 45 41)"/><ellipse cx="25" cy="41" rx="3" ry="5" fill="#FBE3B6" transform="rotate(240 25 41)"/></svg>
 <svg class="deco hide-sm" style="left:33%;top:96px;width:40px;height:40px" viewBox="0 0 46 46" aria-hidden="true"><path d="M23 4 C34 10 38 26 30 38 C26 43 20 43 16 38 C8 26 12 10 23 4 Z" fill="#F4EBDD" stroke="#D9C9AF" stroke-width="1.5"/><path d="M23 8 C24 18 24 28 22 40" stroke="#E1D3BC" stroke-width="1.2" fill="none"/></svg>
@@ -480,6 +494,8 @@ Finalizar pedido
     var btn = $('addBtn'); btn.textContent = '✓ ¡AGREGADA!';
     clearTimeout(addToCart.t); addToCart.t = setTimeout(function(){ btn.textContent = 'AGREGAR AL CARRITO'; }, 1400);
     var badge = $('badge'); badge.classList.remove('bump'); void badge.offsetWidth; badge.classList.add('bump');
+    var ad = $('added'); ad.textContent = '✓ ' + PZ[st.i].name + ' en tu carrito'; ad.classList.add('show');
+    clearTimeout(addToCart.a); addToCart.a = setTimeout(function(){ ad.classList.remove('show'); }, 2200);
   }
   var lastFocus = null;
   function openCart(){ lastFocus = document.activeElement; document.body.classList.add('cart-open'); $('cartBtn').setAttribute('aria-expanded','true'); setTimeout(function(){ $('closeBtn').focus(); }, 50); }
@@ -528,6 +544,17 @@ Finalizar pedido
   document.addEventListener('keydown',function(e){ if(e.key==='Escape' && !m.hidden){ set(false); b.focus(); } });
   var cart=document.getElementById('cartBtn'); if(cart) cart.addEventListener('click',function(){ set(false); });
   window.addEventListener('resize',function(){ if(window.innerWidth>900) set(false); });
+})();
+</script>
+<script>
+/* Encabezado fijo: reserva su espacio y le pone fondo al bajar */
+(function () {
+  var nav = document.querySelector('.nav'), sp = document.getElementById('navspace');
+  function size() { sp.style.height = nav.offsetHeight + 'px'; }
+  function onScroll() { nav.classList.toggle('scrolled', window.scrollY > 8); }
+  size(); onScroll();
+  window.addEventListener('resize', size); window.addEventListener('load', size);
+  window.addEventListener('scroll', onScroll, { passive: true });
 })();
 </script>
 <script src="/pedido/estado.js"></script>

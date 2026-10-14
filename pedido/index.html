@@ -71,6 +71,7 @@ footer{padding:10px 0 40px;color:var(--mut);font-size:13px;text-align:center}foo
 .toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translate(-50%,180%);background:var(--ink);color:#fff;border-radius:999px;padding:12px 18px;font-size:14px;transition:transform .35s;max-width:calc(100vw - 32px);text-align:center;z-index:60}
 .toast{opacity:0;visibility:hidden}.toast.show{transform:translate(-50%,0);opacity:1;visibility:visible}
 @media (prefers-reduced-motion:reduce){.steps li.now .dot::after{animation:none}.prog i,.wa-note,.toast{transition:none}}
+.top{position:sticky;top:0;z-index:30;background:rgba(255,255,255,.95);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
 </style></head><body>
 <header class="top"><div class="wrap bar"><a href="/"><img src="/images/piezza-horizontal.png" alt="PIEZZA Pizzería, inicio"></a><a class="b" href="/">Pedir de nuevo</a></div></header>
 <main class="wrap" id="app"></main>
