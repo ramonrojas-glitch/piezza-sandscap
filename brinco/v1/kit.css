@@ -42,11 +42,7 @@
 .bk-bbtn .bk-bl{display:inline-flex;align-items:baseline;gap:7px}
 .bk-bbtn.bk-has-card{flex-direction:column;gap:1px;min-height:62px}
 .bk-bbtn .bk-bc{font:500 13px var(--bk-font-body);opacity:.85;letter-spacing:.01em}
-.bk-pk-banner{display:flex;align-items:center;gap:12px;width:100%;margin:2px 0 4px;padding:12px 14px;border-radius:14px;background:#F2F5FF;border:1.5px solid #DCE4FF;color:#1F3A9E;text-decoration:none;text-align:left;font:inherit;cursor:pointer}
-.bk-pk-tx{display:flex;flex-direction:column;flex:1;min-width:0;font-size:13px;line-height:1.35}
-.bk-pk-tx b{font-size:15px;color:var(--bk-blue)}
 .bk-go{flex:none;background:var(--bk-blue);color:#fff;border-radius:999px;padding:7px 14px;font-weight:600;font-size:13px}
-.bk-pk-banner:disabled{opacity:.6}
 .bk-or{display:flex;align-items:center;gap:12px;color:#8A7D78;font-size:13px}
 .bk-or::before,.bk-or::after{content:"";flex:1;height:1px;background:#EADFDB}
 
@@ -175,16 +171,8 @@
 .bk-co.bk-is-brinco .bk-fld input:focus,.bk-co.bk-is-brinco .bk-fld select:focus{border-color:var(--bk-blue);box-shadow:0 0 0 3px #E2E8FF}
 .bk-co.bk-is-brinco .bk-seg button[aria-pressed="true"]{border-color:var(--bk-blue);background:#F6F8FF;box-shadow:0 0 0 3px #E2E8FF}
 
-/* Passkeys: Face ID / huella */
-.bk-pk-offer{display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px;padding-top:6px}
-.bk-pk-ico{width:84px;height:84px;border-radius:24px;background:#F2F5FF;border:1.5px solid #DCE4FF;color:var(--bk-blue);display:grid;place-items:center;flex:none}
-.bk-pk-ico.bk-sm{width:42px;height:42px;border-radius:12px}
-.bk-pk-ico.bk-pulse{animation:bkPulse 1.4s ease-in-out infinite}
-@keyframes bkPulse{50%{box-shadow:0 0 0 12px rgba(31,79,255,.1)}}
-.bk-pk-pts{list-style:none;margin:4px 0 0;padding:0;display:flex;flex-direction:column;gap:8px;font-size:14px;color:#3A2E2A;text-align:left}
-.bk-pk-pts li{display:flex;gap:8px;align-items:center}
-.bk-pk-msg{background:#F2F5FF;border:1px solid #DCE4FF;color:#1F3A9E;border-radius:12px;padding:10px 12px;font-size:14px;margin:0;text-align:center}
-.bk-pk-tag{display:inline-flex;align-items:center;gap:4px;margin-left:6px;padding:2px 8px;border-radius:999px;background:#F2F5FF;color:var(--bk-blue);font-size:12px;font-weight:600;vertical-align:1px}
+/* Mensaje informativo en la hoja Brinco */
+.bk-info-msg{background:#F2F5FF;border:1px solid #DCE4FF;color:#1F3A9E;border-radius:12px;padding:10px 12px;font-size:14px;margin:0;text-align:center}
 
 /* Aviso corto */
 .bk-toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));z-index:130;transform:translate(-50%,180%);opacity:0;visibility:hidden;background:#241A17;color:#fff;border-radius:999px;padding:12px 18px;font:500 14px var(--bk-font-body);box-shadow:0 16px 36px -14px rgba(0,0,0,.5);transition:transform .35s cubic-bezier(.2,.85,.25,1),opacity .2s,visibility 0s linear .35s;max-width:calc(100vw - 32px);text-align:center;pointer-events:none}
@@ -206,7 +194,7 @@
 .bk-fvault svg{flex:none;margin-top:2px}
 
 @media (prefers-reduced-motion:reduce){
-  .bk-sheet,.bk-view.bk-enter,.bk-scrim,.bk-pk-ico.bk-pulse,.bk-spin{animation:none}
+  .bk-sheet,.bk-view.bk-enter,.bk-scrim,.bk-spin{animation:none}
   .bk-spin{border-top-color:var(--bk-blue);border-right-color:var(--bk-blue)}
   .bk-okmark circle,.bk-okmark path{animation:none;stroke-dashoffset:0}
   .bk-toast,.bk-wa,.bk-toast.bk-show,.bk-wa.bk-show{transition:none}
@@ -301,7 +289,6 @@ html.bk-panel-page body{background:color-mix(in srgb,var(--bk-bg,#FBF6F1) 70%,#F
 .bk-pn-m{font-size:13px;color:var(--bk-mut);line-height:1.6}.bk-pn-m b{color:var(--bk-ink,#241A17)}
 .bk-pn-bz{margin-top:12px;border-radius:14px;padding:14px;border:1.5px solid #DCE4FF;background:#F6F8FF}
 .bk-pn-bword{font-weight:800;color:#1F4FFF;font-size:17px;letter-spacing:-.02em;font-family:system-ui,-apple-system,sans-serif}
-.bk-pn-pk{font-weight:700;color:var(--bk-ink,#241A17);font-size:14px}
 .bk-pn-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
 .bk-pn-tbl{width:100%;border-collapse:collapse;font-size:14px}
 .bk-pn-tbl th{text-align:left;font-weight:600;color:var(--bk-mut);font-size:12px;text-transform:uppercase;letter-spacing:.06em;padding:8px 10px;border-bottom:1px solid var(--bk-line);white-space:nowrap}

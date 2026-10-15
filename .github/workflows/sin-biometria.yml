@@ -1,0 +1,16 @@
+# Sandscap no usa biometría en ningún producto (ni Face ID, ni huella, ni passkeys).
+# Este chequeo falla si alguien vuelve a meter código o textos de biometría en el Brinco Kit o en el sitio.
+name: Sin biometría
+on: [push, pull_request]
+jobs:
+  revisar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Buscar biometría
+        run: |
+          if grep -rniIE "navigator\.credentials|PublicKeyCredential|webauthn|passkey|face ?id|touch ?id|huella|biometr" \
+               --exclude-dir=.git --exclude-dir=.github . | grep -v "Sin biometría" | grep -v "no usa biometría" | grep -v "brinco_passkey'" ; then
+            echo "Se encontró biometría. Sandscap no la usa en ningún producto."; exit 1
+          fi
+          echo "Limpio: sin biometría."

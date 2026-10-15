@@ -42,6 +42,8 @@ const store = {
   del(k) { try { localStorage.removeItem(k); } catch (e) {} }
 };
 Brinco._store = store;
+// Sin biometría: se borra la llave que haya dejado una versión anterior del kit.
+store.del('brinco_passkey');
 
 // Una sola vez por sitio: pz_events → brinco_events, pz_orders → brinco_orders, pz_src → brinco_src.
 // Se fusionan sin duplicar; las claves viejas se dejan (no se borran) por si algo las lee todavía.
@@ -100,8 +102,8 @@ const STR = {
     paid: 'Total pagado', paidBrinco: 'Pagado con Brinco · ', auth: 'Autorización', deliverTo: 'Entrega', pickAt: 'Recoger en', keepShopping: 'Seguir comprando',
     brincoReady: 'Tu Cuenta Brinco quedó lista.', brincoReadyTx: 'La próxima vez pagas con un toque aquí y en cualquier negocio Brinco. Tu tarjeta no la guarda Brinco: queda protegida por tu procesador de pago.',
     doneTitle: 'Listo',
-    bTagline: 'Paga con un toque', bLoginTx: 'Entra con tu número de WhatsApp. Sin contraseñas: te mandamos un código.', bLoginPk: 'Entra con {x} o con tu número de WhatsApp.',
-    orWa: 'o con tu WhatsApp', waNumber: 'Número de WhatsApp', sendCode: 'Enviar código por WhatsApp',
+    bTagline: 'Paga con un toque', bLoginTx: 'Entra con tu número de WhatsApp. Sin contraseñas: te mandamos un código.',
+    waNumber: 'Número de WhatsApp', sendCode: 'Enviar código por WhatsApp',
     bTerms: 'Al continuar aceptas los Términos de la Cuenta Brinco y su Política de privacidad. Nunca usamos SMS.',
     bCreate: 'Crea tu Cuenta Brinco', bCreateTx: 'Una sola vez. Después pagas con un toque en cualquier negocio Brinco.',
     email: 'Correo', optional: '(opcional)', emailErr: 'Correo no válido.', addrTitle: 'Dirección de entrega', home: 'Casa', work: 'Trabajo', label: 'Etiqueta',
@@ -111,10 +113,6 @@ const STR = {
     cardConsentErr: 'Marca la casilla para guardar la tarjeta.', saveCard: 'Guardar tarjeta',
     hello: 'Hola, {name}', again: 'de nuevo', delivTitle: 'Entrega', cardTitle: 'Tarjeta', readyIn: 'Lista en {a} min', expires: 'Vence {exp}', main: 'principal',
     addOther: '+ Agregar otra tarjeta', confirmPay: 'Confirmar y pagar {total}', notYou: '¿No eres {name}? Cerrar sesión',
-    pkPoints1: 'Entras y pagas en un segundo', pkPoints2: 'Sin códigos ni contraseñas', pkBio: 'Usa la huella o el rostro de tu celular. Tu biometría nunca sale de tu teléfono.',
-    notNow: 'Ahora no', pkNext: 'La próxima vez entras y pagas con {x}.', aLook: 'una mirada', aTouch: 'un toque',
-    pkConfirm: 'Confirma que eres tú', pkFail: 'No se activó, puedes hacerlo luego', useWa: 'Usa tu número de WhatsApp',
-    pkBanner: 'Paga con {x}, sin códigos', activate: 'Activar',
    
     vaultLine: 'Brinco <b>no guarda</b> tu tarjeta. La protegen <b>AZUL</b>, <b>CardNet</b> o <b>MIO</b>.',
     vaultT: 'Brinco no guarda tu tarjeta', vaultTx: 'Tu tarjeta queda guardada y protegida por el procesador de pago certificado PCI DSS. Brinco solo recibe un código seguro (token) que no sirve fuera de tu cuenta.',
@@ -122,12 +120,6 @@ const STR = {
     vaultProcs: 'Procesadores: AZUL, CardNet y MIO',
     d51: 'Fondos insuficientes. Intenta con otra tarjeta.', d05: 'El banco no autorizó la transacción. Contacta a tu banco o usa otra tarjeta.', d54: 'La tarjeta está vencida.',
     code: 'código', emptyCart: 'Tu carrito está vacío.', defaultClient: 'Cliente', card: 'Tarjeta',
-    // Passkeys
-    pk_faceid_name: 'Face ID', pk_faceid_enter: 'Entrar con Face ID', pk_faceid_on: 'Activar Face ID', pk_faceid_title: '¿Entrar con Face ID la próxima vez?', pk_faceid_use: 'Mira tu celular para entrar con Face ID.', pk_faceid_ok: 'Face ID activado', pk_faceid_pay: 'Confirma con Face ID…',
-    pk_touchid_name: 'Touch ID', pk_touchid_enter: 'Entrar con Touch ID', pk_touchid_on: 'Activar Touch ID', pk_touchid_title: '¿Entrar con Touch ID la próxima vez?', pk_touchid_use: 'Pon tu dedo en Touch ID para entrar.', pk_touchid_ok: 'Touch ID activado', pk_touchid_pay: 'Confirma con Touch ID…',
-    pk_huella_name: 'Huella', pk_huella_enter: 'Entrar con tu huella', pk_huella_on: 'Activar huella', pk_huella_title: '¿Entrar con tu huella la próxima vez?', pk_huella_use: 'Pon tu dedo en el lector para entrar.', pk_huella_ok: 'Huella activada', pk_huella_pay: 'Confirma con tu huella…',
-    pk_bio_name: 'Biometría', pk_bio_enter: 'Entrar con biometría', pk_bio_on: 'Activar biometría', pk_bio_title: '¿Entrar con biometría la próxima vez?', pk_bio_use: 'Confirma con la biometría de tu equipo.', pk_bio_ok: 'Biometría activada', pk_bio_pay: 'Confirma con tu biometría…',
-    pk_enterWord: 'Entrar con ',
     // Etapas por defecto ({s} = producto en singular)
     st_programado: 'Programado', st_programadoTexto: 'Lo preparamos a tiempo para tu hora.', st_programadoWa: 'Recibimos tu pedido {no} programado. ¡Gracias!',
     st_recibido: 'Pedido recibido', st_recibidoTexto: 'Ya lo tenemos. Lo estamos revisando.', st_recibidoWa: 'Recibimos tu pedido {no}. ¡Gracias!',
@@ -165,7 +157,7 @@ const STR = {
     pn_clicksS: '{o} orgánicos · {p} pagados', pn_noClicks: 'Aún sin clics', pn_srcs: '{n} orígenes distintos', pn_convX: 'Conversión {x}', pn_aov: 'Ticket promedio {x}',
     pn_f1: 'Visitas', pn_f2: 'Agregaron al carrito', pn_f3: 'Abrieron el pago', pn_f4: 'Enviaron el pago', pn_f5: 'Compraron', pn_fAria: '{s}: {o} orgánico, {p} pagado',
     pn_vb: '{v} visitas · {b} compras', pn_brinco: '<b>{x}</b> de las compras se pagaron con un toque en Brinco · {n} cuenta(s) Brinco nueva(s)',
-    pn_pkT: 'Face ID / huella', pn_pk: '<b>{a}</b> activado(s){k} · <b>{l}</b> entrada(s) o pago(s) con un toque · {f} cancelado(s)', pn_here: 'Este equipo: ', pn_hereOn: 'Face ID activo para {x}', pn_hereOff: 'sin Face ID',
+    
     pn_noVisits: 'Todavía no hay visitas en este periodo.', pn_noOrders: 'Todavía no hay pedidos en este periodo.', pn_pickup: 'Recoger', pn_direct: 'Directo',
     pn_refresh: 'Actualizar', pn_shop: 'Ver tienda', pn_reset: 'Borrar datos', pn_updated: 'Panel actualizado', pn_wiped: 'Datos borrados',
     pn_confirm: '¿Borrar las estadísticas, pedidos y cuentas Brinco guardados en este equipo?', pn_title: 'Panel {n} · Ventas y origen'
@@ -195,8 +187,8 @@ const STR = {
     paid: 'Total paid', paidBrinco: 'Paid with Brinco · ', auth: 'Authorization', deliverTo: 'Delivery to', pickAt: 'Pick up at', keepShopping: 'Keep shopping',
     brincoReady: 'Your Brinco Account is ready.', brincoReadyTx: 'Next time you pay with one tap here and at any Brinco business. Brinco does not store your card: your payment processor protects it.',
     doneTitle: 'Done',
-    bTagline: 'Pay with one tap', bLoginTx: 'Sign in with your WhatsApp number. No passwords: we send you a code.', bLoginPk: 'Sign in with {x} or with your WhatsApp number.',
-    orWa: 'or with your WhatsApp', waNumber: 'WhatsApp number', sendCode: 'Send code on WhatsApp',
+    bTagline: 'Pay with one tap', bLoginTx: 'Sign in with your WhatsApp number. No passwords: we send you a code.',
+    waNumber: 'WhatsApp number', sendCode: 'Send code on WhatsApp',
     bTerms: 'By continuing you accept the Brinco Account Terms and Privacy Policy. We never use SMS.',
     bCreate: 'Create your Brinco Account', bCreateTx: 'Just once. Then you pay with one tap at any Brinco business.',
     email: 'Email', optional: '(optional)', emailErr: 'Invalid email.', addrTitle: 'Delivery address', home: 'Home', work: 'Work', label: 'Label',
@@ -206,10 +198,6 @@ const STR = {
     cardConsentErr: 'Check the box to save the card.', saveCard: 'Save card',
     hello: 'Hi, {name}', again: 'again', delivTitle: 'Delivery', cardTitle: 'Card', readyIn: 'Ready in {a} min', expires: 'Expires {exp}', main: 'main',
     addOther: '+ Add another card', confirmPay: 'Confirm and pay {total}', notYou: 'Not {name}? Sign out',
-    pkPoints1: 'Sign in and pay in a second', pkPoints2: 'No codes or passwords', pkBio: 'Use your phone’s fingerprint or face. Your biometrics never leave your phone.',
-    notNow: 'Not now', pkNext: 'Next time you sign in and pay with {x}.', aLook: 'a glance', aTouch: 'a tap',
-    pkConfirm: 'Confirm it’s you', pkFail: 'It wasn’t activated, you can do it later', useWa: 'Use your WhatsApp number',
-    pkBanner: 'Pay with {x}, no codes', activate: 'Activate',
    
     vaultLine: 'Brinco <b>does not store</b> your card. It is protected by <b>AZUL</b>, <b>CardNet</b> or <b>MIO</b>.',
     vaultT: 'Brinco does not store your card', vaultTx: 'Your card is stored and protected by the PCI DSS–certified payment processor. Brinco only receives a secure code (token) that is useless outside your account.',
@@ -217,11 +205,6 @@ const STR = {
     vaultProcs: 'Processors: AZUL, CardNet and MIO',
     d51: 'Insufficient funds. Try another card.', d05: 'The bank did not authorize the transaction. Contact your bank or use another card.', d54: 'The card has expired.',
     code: 'code', emptyCart: 'Your cart is empty.', defaultClient: 'Customer', card: 'Card',
-    pk_faceid_name: 'Face ID', pk_faceid_enter: 'Sign in with Face ID', pk_faceid_on: 'Turn on Face ID', pk_faceid_title: 'Sign in with Face ID next time?', pk_faceid_use: 'Look at your phone to sign in with Face ID.', pk_faceid_ok: 'Face ID is on', pk_faceid_pay: 'Confirm with Face ID…',
-    pk_touchid_name: 'Touch ID', pk_touchid_enter: 'Sign in with Touch ID', pk_touchid_on: 'Turn on Touch ID', pk_touchid_title: 'Sign in with Touch ID next time?', pk_touchid_use: 'Place your finger on Touch ID to sign in.', pk_touchid_ok: 'Touch ID is on', pk_touchid_pay: 'Confirm with Touch ID…',
-    pk_huella_name: 'Fingerprint', pk_huella_enter: 'Sign in with your fingerprint', pk_huella_on: 'Turn on fingerprint', pk_huella_title: 'Sign in with your fingerprint next time?', pk_huella_use: 'Place your finger on the sensor to sign in.', pk_huella_ok: 'Fingerprint is on', pk_huella_pay: 'Confirm with your fingerprint…',
-    pk_bio_name: 'Biometrics', pk_bio_enter: 'Sign in with biometrics', pk_bio_on: 'Turn on biometrics', pk_bio_title: 'Sign in with biometrics next time?', pk_bio_use: 'Confirm with your device’s biometrics.', pk_bio_ok: 'Biometrics is on', pk_bio_pay: 'Confirm with biometrics…',
-    pk_enterWord: 'Sign in with ',
     st_programado: 'Scheduled', st_programadoTexto: 'We’ll have it ready on time for your slot.', st_programadoWa: 'We received your scheduled order {no}. Thank you!',
     st_recibido: 'Order received', st_recibidoTexto: 'We’ve got it and we’re reviewing it.', st_recibidoWa: 'We received your order {no}. Thank you!',
     st_preparando: 'Preparing your {s}', st_preparandoTexto: 'We’re making it fresh, with love.', st_preparandoWa: 'Your {s} is being prepared 👨‍🍳',
@@ -254,7 +237,7 @@ const STR = {
     pn_clicksS: '{o} organic · {p} paid', pn_noClicks: 'No clicks yet', pn_srcs: '{n} different sources', pn_convX: 'Conversion {x}', pn_aov: 'Average ticket {x}',
     pn_f1: 'Visits', pn_f2: 'Added to cart', pn_f3: 'Opened checkout', pn_f4: 'Submitted payment', pn_f5: 'Purchased', pn_fAria: '{s}: {o} organic, {p} paid',
     pn_vb: '{v} visits · {b} purchases', pn_brinco: '<b>{x}</b> of purchases were paid with one tap on Brinco · {n} new Brinco account(s)',
-    pn_pkT: 'Face ID / fingerprint', pn_pk: '<b>{a}</b> turned on{k} · <b>{l}</b> one-tap sign-in(s) or payment(s) · {f} canceled', pn_here: 'This device: ', pn_hereOn: 'Face ID on for {x}', pn_hereOff: 'no Face ID',
+    
     pn_noVisits: 'No visits in this period yet.', pn_noOrders: 'No orders in this period yet.', pn_pickup: 'Pickup', pn_direct: 'Direct',
     pn_refresh: 'Refresh', pn_shop: 'View store', pn_reset: 'Delete data', pn_updated: 'Dashboard updated', pn_wiped: 'Data deleted',
     pn_confirm: 'Delete the stats, orders and Brinco accounts saved on this device?', pn_title: '{n} dashboard · Sales and sources'
@@ -657,7 +640,6 @@ Brinco._vault = { html: vaultHTML, footerHTML: vaultFooterHTML, fill: fillVaultF
    del dominio padre, así todos los negocios en *.sandscap.com.do ven la misma cuenta en el mismo navegador.
    En otros dominios (*.sandscap.io, localhost…) se queda en el localStorage de ese sitio. */
 const SHARED = /(^|\.)sandscap\.com\.do$/.test(location.hostname) ? 'sandscap.com.do' : null;
-const RP = SHARED || location.hostname;   // las passkeys se crean para todo sandscap.com.do
 const ck = {
   get(n) { try { const m = document.cookie.match(new RegExp('(?:^|; )' + n + '=([^;]*)')); return m ? JSON.parse(decodeURIComponent(m[1])) : null; } catch (e) { return null; } },
   set(n, v) {
@@ -672,7 +654,6 @@ const slim = (a) => {
     o[x.phone] = { phone: x.phone, name: x.name, email: x.email, createdAt: x.createdAt, touched: x.touched,
       addresses: (x.addresses || []).slice(-2).map((d) => ({ id: d.id, label: d.label, street: d.street, sector: d.sector, ref: d.ref, main: d.main })),
       cards: (x.cards || []).slice(-2).map((c) => ({ id: c.id, brand: c.brand, last4: c.last4, exp: c.exp, processor: c.processor, main: c.main, declineCode: c.declineCode || undefined })),
-      passkeys: (x.passkeys || []).filter((p) => p.rp === RP).slice(-2).map((p) => ({ id: p.id, kind: p.kind, rp: p.rp })),
       merchants: (x.merchants || []).slice(-3).map((m) => ({ name: m.name, at: m.at })) };
   });
   return o;
@@ -701,101 +682,14 @@ if (SHARED) {
 Brinco._account = B;
 Brinco._shared = SHARED;
 
-/* --- src/core/75-passkeys.js --- */
-/* ===== Brinco Kit · Passkeys: Face ID / huella (WebAuthn real; demo sin servidor, no se verifican firmas) =====
-   En este equipo se guarda solo { phone, credId } en brinco_passkey. La biometría nunca sale del teléfono. */
-// Navegador dentro de Instagram/Facebook/TikTok o WebView de Android: ahí las passkeys del equipo no funcionan
-// (la llamada se queda colgada o falla callada), así que NUNCA se llama a navigator.credentials.
+/* --- src/core/75-inapp.js --- */
+/* ===== Brinco Kit · Navegador dentro de Instagram/Facebook/TikTok =====
+   Sandscap no usa biometría en ningún producto.
+   La cuenta Brinco se verifica solo con el código de WhatsApp. */
 const UA = navigator.userAgent || '';
-const IOS = /iPhone|iPad|iPod/i.test(UA);
 const ANDROID = /Android/i.test(UA);
 const INAPP = /Instagram|FBAN|FBAV|FB_IAB|FBIOS|FB4A|TikTok|musical_ly|BytedanceWebview|Snapchat|Line\/|LinkedInApp|Twitter|GSA\//i.test(UA) || (ANDROID && /; wv\)/.test(UA));
-const PK_TIMEOUT = 25000;
-// Si la biometría no responde en ~25 s se toma como fallo (nunca un botón muerto)
-function withTimeout(p) {
-  return new Promise((res, rej) => {
-    const tm = setTimeout(() => { const e = new Error('tiempo agotado'); e.name = 'TimeoutError'; rej(e); }, PK_TIMEOUT);
-    Promise.resolve(p).then((v) => { clearTimeout(tm); res(v); }, (e) => { clearTimeout(tm); rej(e); });
-  });
-}
-const PK = {
-  _ok: null,
-  lastAt: 0,
-  kind() {
-    const ua = navigator.userAgent || '';
-    if (/Android/i.test(ua)) return 'huella';
-    if (/iPhone|iPad|iPod/i.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1)) return 'faceid';
-    if (/Macintosh/.test(ua)) return 'touchid';
-    return 'bio';
-  },
-  t(k) { return t('pk_' + PK.kind() + '_' + k); },
-  inapp: INAPP,
-  can() { return !INAPP && !!(window.PublicKeyCredential && navigator.credentials && navigator.credentials.get && window.isSecureContext !== false); },
-  // ¿Este equipo tiene lector biométrico? (se pregunta una sola vez)
-  available() {
-    if (!PK._ok) {
-      PK._ok = (PK.can() && typeof PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable === 'function')
-        ? withTimeout(PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()).then((x) => !!x, () => false) : Promise.resolve(false);
-    }
-    return PK._ok;
-  },
-  // Passkey guardada en este equipo, solo si la cuenta todavía la tiene
-  device() {
-    const d = store.get('brinco_passkey', null);
-    const ok = (acc, id) => acc && (acc.passkeys || []).some((p) => p.id === id && p.rp === RP);
-    if (d && d.phone && d.credId && ok(B.accounts()[d.phone], d.credId)) return d;
-    // Activada en otro negocio Brinco de sandscap.com.do con este mismo navegador
-    const me = B.me(), pk = me && (me.passkeys || []).filter((p) => p.rp === RP).pop();
-    return pk ? { phone: me.phone, credId: pk.id, kind: pk.kind } : null;
-  },
-  rand(n) { const a = new Uint8Array(n); crypto.getRandomValues(a); return a; },
-  b64u(buf) { let s = ''; new Uint8Array(buf).forEach((b) => { s += String.fromCharCode(b); }); return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); },
-  unb64u(s) { const b = atob(s.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((s.length + 3) % 4)); return Uint8Array.from(b, (c) => c.charCodeAt(0)); },
-  create(phone, displayName) {
-    if (!PK.can()) return Promise.reject(Object.assign(new Error('navegador sin passkeys'), { name: 'InAppBrowser' }));
-    return withTimeout(navigator.credentials.create({ publicKey: {
-      challenge: PK.rand(32),
-      rp: { name: 'Brinco', id: RP },
-      user: { id: PK.rand(16), name: phone, displayName: displayName || phone },
-      pubKeyCredParams: [{ type: 'public-key', alg: -7 }, { type: 'public-key', alg: -257 }],
-      authenticatorSelection: { authenticatorAttachment: 'platform', userVerification: 'required', residentKey: 'preferred' },
-      timeout: 60000
-    } })).then((cred) => {
-      if (!cred) throw new Error('sin credencial');
-      const id = PK.b64u(cred.rawId);
-      B.upsert(phone, (acc) => {
-        if (acc) { acc.passkeys = (acc.passkeys || []).filter((p) => p.id !== id); acc.passkeys.push({ id, kind: PK.kind(), at: new Date().toISOString(), rp: RP }); }
-        return acc;
-      });
-      store.set('brinco_passkey', { phone, credId: id, kind: PK.kind(), at: Date.now() });
-      PK.lastAt = Date.now();
-      return id;
-    });
-  },
-  get(d) {
-    if (!PK.can()) return Promise.reject(Object.assign(new Error('navegador sin passkeys'), { name: 'InAppBrowser' }));
-    return withTimeout(navigator.credentials.get({ publicKey: {
-      challenge: PK.rand(32),
-      allowCredentials: [{ type: 'public-key', id: PK.unb64u(d.credId) }],
-      userVerification: 'required', rpId: RP, timeout: 60000
-    } })).then((cred) => {
-      if (!cred || PK.b64u(cred.rawId) !== d.credId) throw new Error('no coincide');
-      PK.lastAt = Date.now();
-      return d.phone;
-    });
-  }
-};
-
-// Ícono: rostro (Face ID / biometría) o huella (Android / Touch ID)
-function pkIcon(size) {
-  size = size || 22;
-  const a = `width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"`;
-  if (PK.kind() === 'huella' || PK.kind() === 'touchid') return `<svg ${a}><path d="M12 11v2.5a9 9 0 0 1-1.6 5.2"/><path d="M8.6 10.6a3.4 3.4 0 0 1 6.8.4v1.6a13 13 0 0 1-.9 4.6"/><path d="M5.6 15.6a12 12 0 0 0 .6-4.6 5.8 5.8 0 0 1 10.6-3.3"/><path d="M18.3 10.2c.1.3.1.6.1.9 0 2.3-.3 4.4-.9 6.4"/><path d="M3.4 9.2A9 9 0 0 1 12 3a9 9 0 0 1 4.6 1.3"/><path d="M7.8 20.2a14 14 0 0 0 1.1-2.1"/></svg>`;
-  return `<svg ${a}><path d="M4 8V6.5A2.5 2.5 0 0 1 6.5 4H8M16 4h1.5A2.5 2.5 0 0 1 20 6.5V8M20 16v1.5a2.5 2.5 0 0 1-2.5 2.5H16M8 20H6.5A2.5 2.5 0 0 1 4 17.5V16"/><path d="M9 9.2v1.4M15 9.2v1.4M12 9.2v3.6h-.9M9.6 15.6a3.4 3.4 0 0 0 4.8 0"/></svg>`;
-}
-Brinco._passkeys = PK;
 Brinco._inapp = INAPP;
-Brinco._icons.passkey = pkIcon;
 
 /* --- src/core/80-checkout.js --- */
 /* ===== Brinco Kit · caja con tarjeta (campos de AZUL) y "Pagar con Brinco" =====
@@ -873,7 +767,7 @@ const CONSENT_ACC = 'Guardar mis datos en Brinco para pagar con un toque en cual
 
 // ---------- Estado de la caja ----------
 const S = { mode: 'delivery', view: 'checkout', hist: [], pendingPay: null, otpCode: '', otpPhone: '', otpNext: null,
-  bAddr: null, bCard: null, bNew: false, pkAsked: {}, coupon: null, store: 0, prog: null, form: store.get('brinco_form', null) };
+  bAddr: null, bCard: null, bNew: false, coupon: null, store: 0, prog: null, form: store.get('brinco_form', null) };
 
 // ---------- DOM (se crea al abrir por primera vez) ----------
 let root = null, body = null;
@@ -1169,77 +1063,6 @@ function sendOtp(phone, next) {
   setTimeout(() => { if (S.view === 'otp' && S.otpCode === code) showWa(t('otpMsg', { code: `<b>${code.slice(0, 3)} ${code.slice(3)}</b>` }), () => { if (S.view === 'otp') fill(S.otpCode, 0); }); }, 900);
 }
 
-// --- Ofrecer Face ID / huella después de crear la cuenta o confirmar el WhatsApp ---
-function offerPasskey(phone, next) {
-  const acc = B.accounts()[phone];
-  if (!acc || S.pkAsked[phone]) { next(); return; }
-  // Dentro de Instagram/Facebook…: no se ofrece Face ID (ahí no funciona); se sigue con el código de WhatsApp
-  if (INAPP) { next(); return; }
-  const d = PK.device();
-  if (d && d.phone === phone) { next(); return; }
-  PK.available().then((ok) => {
-    if (!ok) { next(); return; }
-    S.pkAsked[phone] = true;
-    VIEWS.bPasskey(phone, next);
-  }, () => next());
-}
-
-VIEWS.bPasskey = function (phone, next) {
-  if (typeof phone !== 'string') { VIEWS.checkout({ replace: true }); return; }
-  const acc = B.accounts()[phone] || {};
-  show('bPasskey', `
-    <div class="bk-pk-offer">
-      <span class="bk-pk-ico">${pkIcon(46)}</span>
-      <p class="bk-h3">${PK.t('title')}</p>
-      <p class="bk-muted">${t('pkBio')}</p>
-      <ul class="bk-pk-pts"><li>${ICONS.check}${t('pkPoints1')}</li><li>${ICONS.check}${t('pkPoints2')}</li></ul>
-    </div>
-    <button class="bk-pay bk-blue" type="button" id="pkOn">${pkIcon(22)}${PK.t('on')}</button>
-    <button class="bk-link" type="button" id="pkSkip">${t('notNow')}</button>`, { brinco: true, root: true });
-  let busy = false;
-  $('#pkOn', body).addEventListener('click', (e) => {
-    if (busy) return;
-    busy = true; e.currentTarget.disabled = true;
-    PK.create(phone, acc.name).then(() => {
-      track('passkey_activada', { tipo: PK.kind() });
-      VIEWS.bPasskeyOk(next);
-    }, (err) => {
-      track('passkey_fallo', { paso: 'activar', error: (err && err.name) || 'error' });
-      toast(t('pkFail'));
-      next();
-    });
-  });
-  $('#pkSkip', body).addEventListener('click', () => next());
-};
-
-VIEWS.bPasskeyOk = function (next) {
-  if (typeof next !== 'function') { VIEWS.checkout({ replace: true }); return; }
-  show('bPasskeyOk', `<div class="bk-view bk-done bk-flat">
-    ${ICONS.okmark}
-    <p class="bk-h3">${PK.t('ok')}</p>
-    <p class="bk-muted">${t('pkNext', { x: PK.kind() === 'faceid' ? t('aLook') : t('aTouch') })}</p></div>`, { brinco: true, root: true });
-  setTimeout(() => { if (S.view === 'bPasskeyOk') next(); }, 1300);
-};
-
-// --- Entrar con Face ID / huella; si falla, al WhatsApp de siempre ---
-function passkeyLogin(d, fromLogin) {
-  show('pkWait', `<div class="bk-view bk-verify bk-flat">
-    <span class="bk-pk-ico bk-pulse">${pkIcon(46)}</span>
-    <p class="bk-h3">${t('pkConfirm')}</p>
-    <p class="bk-muted">${PK.t('use')}</p></div>`, { brinco: true, replace: !!fromLogin });
-  PK.get(d).then((phone) => {
-    B.login(phone);
-    track('passkey_login', { tipo: PK.kind(), paso: 'entrar' });
-    const acc = B.accounts()[phone];
-    S.bNew = false;
-    if (acc && acc.cards && acc.cards.length) VIEWS.bSummary({ root: true });
-    else VIEWS.bProfile();
-  }, (err) => {
-    track('passkey_fallo', { paso: 'entrar', error: (err && err.name) || 'error' });
-    VIEWS.bLogin({ replace: true, phone: d.phone, msg: t('useWa') });
-  });
-}
-
 // --- 3D Secure y cobro ---
 function verify3ds() {
   const p = S.pendingPay;
@@ -1314,9 +1137,7 @@ function charge() {
   try { if (cart() && cart().clear) cart().clear(); } catch (e) { console.error(e); }
   S.coupon = null; S.pendingPay = null;
   const fire = () => { try { window.dispatchEvent(new CustomEvent('brinco:order', { detail: order })); } catch (e) {} };
-  // Flujo A: cuenta creada al pagar → ofrecemos Face ID / huella antes de la confirmación
-  if (p.via === 'tarjeta' && p.save) offerPasskey(p.phone, () => { VIEWS.done(order); fire(); });
-  else { VIEWS.done(order); fire(); }
+  VIEWS.done(order); fire();
 }
 
 VIEWS.done = function (o) {
@@ -1347,31 +1168,25 @@ VIEWS.done = function (o) {
 function startBrinco() {
   const me = B.me();
   if (me && me.cards && me.cards.length) { S.bNew = false; VIEWS.bSummary(); return; }
-  // Sin sesión, pero este equipo tiene Face ID / huella: entra directo (se llama dentro del toque)
-  const d = PK.can() ? PK.device() : null;
-  if (d) { passkeyLogin(d); return; }
   VIEWS.bLogin();
 }
 
 VIEWS.bLogin = function (o) {
   o = o || {};
-  const d = PK.can() ? PK.device() : null;
   show('bLogin', `
     <div class="bk-center bk-stack">
       ${bword(34)}
       <p class="bk-h3">${t('bTagline')}</p>
-      <p class="bk-muted">${d ? t('bLoginPk', { x: PK.t('enter').replace(t('pk_enterWord'), '') }) : t('bLoginTx')}</p>
+      <p class="bk-muted">${t('bLoginTx')}</p>
     </div>
-    ${o.msg ? `<p class="bk-pk-msg" role="status">${esc(o.msg)}</p>` : ''}
-    ${d ? `<button class="bk-pay bk-blue" type="button" id="bPk">${pkIcon(22)}${PK.t('enter')}</button><div class="bk-or">${t('orWa')}</div>` : ''}
-    <div class="bk-fld"><label for="bPhone">${t('waNumber')}</label><input id="bPhone" type="tel" inputmode="tel" autocomplete="tel-national" placeholder="809-555-1234" ${d ? '' : 'autofocus'}><span class="bk-err">${t('waErr')}</span></div>
-    <button class="bk-pay ${d ? 'bk-ghost' : 'bk-blue'}" type="button" id="bSend">${t('sendCode')}</button>
+    ${o.msg ? `<p class="bk-info-msg" role="status">${esc(o.msg)}</p>` : ''}
+    <div class="bk-fld"><label for="bPhone">${t('waNumber')}</label><input id="bPhone" type="tel" inputmode="tel" autocomplete="tel-national" placeholder="809-555-1234" autofocus><span class="bk-err">${t('waErr')}</span></div>
+    <button class="bk-pay bk-blue" type="button" id="bSend">${t('sendCode')}</button>
     ${vaultHTML(false)}
     <p class="bk-muted bk-center bk-small">${t('bTerms')}</p>`, { brinco: true, replace: o.replace });
   const ph = $('#bPhone', body);
   if (o.phone) ph.value = fmtPhone(o.phone);
   else if (S.form && S.form.coPhone) ph.value = S.form.coPhone;
-  if (d) $('#bPk', body).addEventListener('click', () => passkeyLogin(d, true));
   ph.addEventListener('input', () => { ph.value = fmtPhone(ph.value); setErr('bPhone', false); });
   const go = () => {
     if (!validPhone(ph.value)) { setErr('bPhone', true); ph.focus(); return; }
@@ -1379,7 +1194,7 @@ VIEWS.bLogin = function (o) {
     sendOtp(phone, () => {
       B.login(phone);
       const acc = B.accounts()[phone];
-      if (acc && acc.cards && acc.cards.length) { S.bNew = false; offerPasskey(phone, () => VIEWS.bSummary({ root: true })); }
+      if (acc && acc.cards && acc.cards.length) { S.bNew = false; VIEWS.bSummary({ root: true }); }
       else { S.bNew = !acc; VIEWS.bProfile(); }
     });
   };
@@ -1462,8 +1277,7 @@ VIEWS.bCard = function () {
         return acc;
       });
       track('brinco_tarjeta');
-      // Flujo B: cuenta lista → ofrecemos Face ID / huella y seguimos al resumen
-      offerPasskey(B.session().phone, () => VIEWS.bSummary({ root: true }));
+      VIEWS.bSummary({ root: true });
     }, 1600);
   });
 };
@@ -1480,10 +1294,8 @@ VIEWS.bSummary = function (o) {
   if (!cards.length) { VIEWS.bCard(); return; }
   const mode = S.bAddr === 'pickup' ? 'pickup' : 'delivery';
   const first = (me.name || '').split(' ')[0] || t('again');
-  const pkd = PK.can() ? PK.device() : null;
-  const pk = pkd && pkd.phone === me.phone ? pkd : null;
   show('bSummary', `
-    <div class="bk-hello"><span class="bk-avatar">${esc((me.name || 'B').trim().charAt(0).toUpperCase())}</span><div><p class="bk-h3 bk-h3-sm">${t('hello', { name: esc(first) })}</p><p class="bk-muted">${fmtPhone(me.phone)}${pk ? ` <span class="bk-pk-tag">${pkIcon(14)}${PK.t('name')}</span>` : ''}</p></div></div>
+    <div class="bk-hello"><span class="bk-avatar">${esc((me.name || 'B').trim().charAt(0).toUpperCase())}</span><div><p class="bk-h3 bk-h3-sm">${t('hello', { name: esc(first) })}</p><p class="bk-muted">${fmtPhone(me.phone)}</p></div></div>
     ${o.error ? `<div class="bk-azul-err" role="alert">${esc(o.error)}</div>` : ''}
     <div class="bk-sec"><h3 class="bk-blue-h">${t('delivTitle')}</h3>
       ${addrs.map((a) => `<button type="button" class="bk-opt" role="radio" data-addr="${a.id}" aria-checked="${S.bAddr === a.id}"><span class="bk-dot"></span><span class="bk-otx"><b>${esc(a.label || t('home'))} · ${t('delivery')} ${totals('delivery').ship ? fmt(totals('delivery').ship) : t('free')}</b><span>${esc(a.street)}, ${esc(a.sector)}</span></span></button>`).join('')}
@@ -1497,9 +1309,8 @@ VIEWS.bSummary = function (o) {
       <button class="bk-link bk-link-left" type="button" id="bAddCard">${t('addOther')}</button>
       ${vaultHTML(true)}
     </div>
-    ${!pk ? '<div id="pkSlot"></div>' : ''}
     ${sumHTML(mode)}
-    <button class="bk-pay bk-blue" type="button" id="bConfirm">${pk ? pkIcon(20) : ''}${t('confirmPay', { total: fmt(totals(mode).total) })}</button>
+    <button class="bk-pay bk-blue" type="button" id="bConfirm">${t('confirmPay', { total: fmt(totals(mode).total) })}</button>
     ${testNote()}
     <button class="bk-link" type="button" id="bOut">${t('notYou', { name: esc(first) })}</button>`, { brinco: true, root: o.root, replace: o.replace });
   $$('[data-addr]', body).forEach((b) => b.addEventListener('click', () => { S.bAddr = b.dataset.addr === 'pickup' ? 'pickup' : +b.dataset.addr; VIEWS.bSummary({ replace: true }); }));
@@ -1507,29 +1318,6 @@ VIEWS.bSummary = function (o) {
   $('#bAddCard', body).addEventListener('click', () => VIEWS.bCard());
   bindProg('b');
   $$('[data-store]', body).forEach((b) => b.addEventListener('click', () => { S.store = +b.dataset.store; $$('[data-store]', body).forEach((x) => x.setAttribute('aria-checked', String(x === b))); }));
-  // Sin Face ID en este equipo: ofrecer activarlo aquí mismo (nunca dentro de Instagram/Facebook…)
-  const slot = $('#pkSlot', body);
-  if (slot) {
-    if (!INAPP) {
-      PK.available().then((ok) => {
-        if (!ok || S.view !== 'bSummary' || !document.body.contains(slot)) return;
-        slot.innerHTML = `<button type="button" class="bk-pk-banner" id="pkAct"><span class="bk-pk-ico bk-sm">${pkIcon(22)}</span><span class="bk-pk-tx"><b>${PK.t('on')}</b><span>${t('pkBanner', { x: PK.kind() === 'faceid' ? t('aLook') : t('aTouch') })}</span></span><span class="bk-go">${t('activate')}</span></button>`;
-        const btn = $('#pkAct', slot);
-        btn.addEventListener('click', () => {
-          btn.disabled = true;
-          PK.create(me.phone, me.name).then(() => {
-            track('passkey_activada', { tipo: PK.kind(), desde: 'resumen' });
-            toast(PK.t('ok'));
-            if (S.view === 'bSummary') VIEWS.bSummary({ replace: true });
-          }, (err) => {
-            track('passkey_fallo', { paso: 'activar', error: (err && err.name) || 'error' });
-            toast(t('pkFail'));
-            btn.disabled = false;
-          });
-        });
-      });
-    }
-  }
   $('#bOut', body).addEventListener('click', () => { B.logout(); S.bAddr = S.bCard = null; VIEWS.checkout({ replace: true }); });
   let paying = false;
   $('#bConfirm', body).addEventListener('click', (ev) => {
@@ -1541,20 +1329,6 @@ VIEWS.bSummary = function (o) {
       card: { brand: card.brand, last4: card.last4, exp: card.exp, declineCode: card.declineCode || null }, total: totals(mode).total,
       store: mode === 'pickup' ? curStore() : null, prog: progOn() ? S.prog : null };
     const pay = () => { track('pago_enviado', { total: S.pendingPay.total, metodo: 'brinco' }); processing(); };
-    // Con Face ID / huella activo: se pide justo antes de cobrar (salvo que acabe de usarlo hace menos de 2 min)
-    if (pk && !(PK.lastAt && Date.now() - PK.lastAt < 120000)) {
-      paying = true;
-      const btn = ev.currentTarget; btn.disabled = true; btn.innerHTML = pkIcon(20) + esc(PK.t('pay'));
-      PK.get(pk).then(() => {
-        track('passkey_login', { tipo: PK.kind(), paso: 'pago' });
-        pay();
-      }, (err) => {
-        track('passkey_fallo', { paso: 'pago', error: (err && err.name) || 'error' });
-        toast(t('useWa'));
-        sendOtp(me.phone, pay);
-      });
-      return;
-    }
     pay();
   });
 };
@@ -1715,7 +1489,6 @@ Brinco._ui.isOpen = () => !!(root && root.classList.contains('bk-open'));
           '<h2>Website</h2><p>Tomamos todas las medidas y precauciones razonables para proteger tu información personal y seguimos las mejores prácticas de la industria para asegurar que no sea usada de manera inapropiada, alterada o destruida. Todo el sitio ' + dom + ' usa conexión cifrada HTTPS (TLS).</p>' +
           '<h2>Datos de tu tarjeta</h2><p>Los datos de tu tarjeta se escriben directamente en los campos seguros de AZUL (Servicios Digitales Popular), que cifran la transmisión con TLS y cumplen con los requerimientos de PCI DSS. ' + n + ' no recibe ni almacena el número completo de la tarjeta ni el código de seguridad (CVV). Solo conservamos la marca, los últimos 4 dígitos, el código de autorización y la referencia de la transacción.</p>' +
           '<h2>Brinco no guarda tarjetas</h2><p>Brinco nunca guarda el número de tu tarjeta ni su código de seguridad. Si autorizas guardar tu tarjeta en tu Cuenta Brinco, la tarjeta queda guardada y protegida por el procesador de pago certificado PCI DSS que procesa la compra: <b>AZUL</b>, <b>CardNet</b> o <b>MIO</b>. Brinco recibe solo un identificador seguro (token), que no permite reconstruir el número y no sirve fuera de tu cuenta. Puedes borrar tu tarjeta o tu cuenta en cualquier momento.</p>' +
-          '<h2>Face ID y huella</h2><p>Si activas Face ID o tu huella para entrar a Brinco, la biometría nunca sale de tu teléfono: tu equipo solo confirma que eres tú con una llave segura (passkey). Ni ' + n + ' ni Brinco ven tu cara ni tu huella.</p>' +
           '<h2>3D Secure</h2><p>Las compras pueden requerir autenticación adicional del banco emisor mediante Visa Secure y Mastercard ID Check, que protege contra el uso no autorizado de tu tarjeta.</p>' +
           '<h2>Pagos</h2><p>Los métodos de pago usados por ' + n + ' son servicios de terceros (AZUL) que cumplen con todos los estándares de seguridad y cifrado para mantener tu información segura. Solo usan la información necesaria para completar el pago. Te recomendamos leer también las políticas de privacidad de estos proveedores.</p>';
       }
@@ -1761,7 +1534,6 @@ Brinco._ui.isOpen = () => !!(root && root.classList.contains('bk-open'));
           '<h2>Website</h2><p>We take all reasonable measures and precautions to protect your personal information and follow industry best practices to make sure it is not misused, altered or destroyed. The whole site ' + dom + ' uses an encrypted HTTPS (TLS) connection.</p>' +
           '<h2>Your card data</h2><p>Your card details are typed directly into AZUL’s secure fields (Servicios Digitales Popular), which encrypt the transmission with TLS and meet PCI DSS requirements. ' + n + ' never receives or stores the full card number or the security code (CVV). We only keep the card brand, the last 4 digits, the authorization code and the transaction reference.</p>' +
           '<h2>Brinco does not store cards</h2><p>Brinco never stores your card number or security code. If you choose to save your card in your Brinco Account, it is stored and protected by the PCI DSS–certified payment processor that handles the purchase: <b>AZUL</b>, <b>CardNet</b> or <b>MIO</b>. Brinco only receives a secure identifier (token) that cannot be used to rebuild the number and is useless outside your account. You can delete your card or your account at any time.</p>' +
-          '<h2>Face ID and fingerprint</h2><p>If you turn on Face ID or your fingerprint to sign in to Brinco, your biometrics never leave your phone: your device only confirms it is you with a secure key (passkey). Neither ' + n + ' nor Brinco ever sees your face or fingerprint.</p>' +
           '<h2>3D Secure</h2><p>Purchases may require additional authentication from the issuing bank through Visa Secure and Mastercard ID Check, which protects against unauthorized use of your card.</p>' +
           '<h2>Payments</h2><p>The payment methods used by ' + n + ' are third-party services (AZUL) that meet all security and encryption standards to keep your information safe. They only use the information needed to complete the payment. We recommend you also read these providers’ privacy policies.</p>';
       }
@@ -1850,7 +1622,7 @@ Brinco._ui.isOpen = () => !!(root && root.classList.contains('bk-open'));
 
 /* --- src/modules/panel.js --- */
 (function () {
-/* Brinco Kit · /panel/: ventas y origen de clientes (orgánico vs. pagado), embudo, Brinco, Face ID, pedidos y links.
+/* Brinco Kit · /panel/: ventas y origen de clientes (orgánico vs. pagado), embudo, Brinco, pedidos y links.
    Monta en [data-brinco="panel"]. Lee brinco_events y brinco_orders de este equipo. */
 (function () {
   var M = window.__bkm; if (!M) return;
@@ -1880,7 +1652,7 @@ Brinco._ui.isOpen = () => !!(root && root.classList.contains('bk-open'));
           '<div class="bk-pn-leg"><span><i class="bk-pn-o"></i>' + T('pn_org') + '</span><span><i class="bk-pn-pd"></i>' + T('pn_paidAds') + '</span></div>' +
           '<p class="bk-pn-note">' + T('pn_people') + '</p></section>' +
         '<section class="bk-pn-card"><h2 class="bk-pn-h2">' + T('pn_split') + '</h2><div class="bk-pn-split" data-k="split"></div>' +
-          '<div class="bk-pn-bz" data-k="brinco"></div><div class="bk-pn-bz" data-k="pk"></div></section>' +
+          '<div class="bk-pn-bz" data-k="brinco"></div></section>' +
       '</div>' +
       '<section class="bk-pn-card bk-pn-mt"><h2 class="bk-pn-h2">' + T('pn_bySrc') + '</h2><div class="bk-pn-scroll"><table class="bk-pn-tbl"><thead><tr><th>' + T('pn_src') + '</th><th>' + T('pn_type') + '</th><th class="bk-pn-n">' + T('pn_visits') + '</th><th class="bk-pn-n">' + T('pn_cart') + '</th><th class="bk-pn-n">' + T('pn_pay') + '</th><th class="bk-pn-n">' + T('pn_buys') + '</th><th class="bk-pn-n">' + T('pn_rev') + '</th><th class="bk-pn-n">' + T('pn_conv') + '</th></tr></thead><tbody data-k="bySrc"></tbody></table></div></section>' +
       '<section class="bk-pn-card bk-pn-mt"><h2 class="bk-pn-h2">' + T('pn_last') + '</h2><div class="bk-pn-scroll"><table class="bk-pn-tbl"><thead><tr><th>' + T('pn_order') + '</th><th>' + T('pn_date') + '</th><th>' + T('pn_client') + '</th><th>' + T('pn_deliv') + '</th><th>' + T('pn_pay') + '</th><th>' + T('pn_src') + '</th><th class="bk-pn-n">' + T('pn_tot') + '</th></tr></thead><tbody data-k="orders"></tbody></table></div></section>' +
@@ -1929,15 +1701,6 @@ Brinco._ui.isOpen = () => !!(root && root.classList.contains('bk-open'));
     $('split').innerHTML = block(false) + block(true);
     var bz = orders.filter(function (o) { return o.via === 'brinco'; }).length, newAcc = orders.filter(function (o) { return o.brincoNew; }).length;
     $('brinco').innerHTML = '<span class="bk-pn-bword">brinco</span><div class="bk-pn-m">' + T('pn_brinco', { x: pct(bz, orders.length), n: newAcc }) + '</div>';
-
-    // Face ID / huella (passkeys)
-    var act = ev.filter(function (e) { return e.e === 'passkey_activada'; });
-    var logins = count('passkey_login'), fails = count('passkey_fallo');
-    var kinds = {}; act.forEach(function (e) { var k = (e.d && e.d.tipo) || 'Face ID / huella'; kinds[k] = (kinds[k] || 0) + 1; });
-    var here = M.get('brinco_passkey', null);
-    $('pk').innerHTML = '<span class="bk-pn-pk">' + T('pn_pkT') + '</span><div class="bk-pn-m">' +
-      T('pn_pk', { a: act.length, k: Object.keys(kinds).length ? ' (' + Object.keys(kinds).map(function (k) { return M.esc(k) + ': ' + kinds[k]; }).join(', ') + ')' : '', l: logins, f: fails }) +
-      '<br>' + T('pn_here') + (here ? T('pn_hereOn', { x: M.esc(M.fmtPhone(here.phone)) }) : T('pn_hereOff')) + '</div>';
 
     // Por origen
     var srcs = {};
