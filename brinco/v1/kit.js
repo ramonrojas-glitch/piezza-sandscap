@@ -4,7 +4,7 @@
 
 /* --- src/core/00-base.js --- */
 /* ===== Brinco Kit · base: namespace, helpers ===== */
-const VERSION = '1.1.0';
+const VERSION = '1.2.0';
 const SCRIPT = document.currentScript || (function () {
   const s = document.querySelectorAll('script[src*="kit.js"]'); return s[s.length - 1] || null;
 })();
@@ -96,6 +96,9 @@ const STR = {
     otpTitle: 'Confirma tu WhatsApp', otpSent: 'Te enviamos un código de 6 dígitos al {phone}.', otpGo: 'Confirmar código', otpAgain: 'Enviar otro código',
     otpBad: 'Código incorrecto. Revisa el mensaje de WhatsApp.', otpMany: 'Demasiados intentos. Pide otro código.', digit: 'Dígito {n}',
     otpMsg: 'Tu código de Brinco es {code}. Vence en 10 minutos. No lo compartas con nadie.', now: 'ahora',
+    otpSending: 'Enviando tu código por WhatsApp…', otpTest: 'Modo de prueba: escribe cualquier código de 6 dígitos.',
+    wOffline: 'No pudimos conectar con Brinco. Revisa tu internet e intenta otra vez.', wErr: 'Algo falló con Brinco. Intenta otra vez.',
+    wSaveFail: 'Tu pedido quedó pagado, pero no pudimos guardar la tarjeta en Brinco.',
     verifyBank: 'Verificando con tu banco', noClose: 'No cierres esta ventana.', processing: 'Procesando tu pago', verifyCard: 'Verificando tu tarjeta', processingAria: 'Procesando',
     done: '¡Pedido confirmado!', order: 'Orden', arrives: 'Llega en {a}–{b} min', ready: 'Listo para recoger en {a} min',
     doneWa: 'Te avisamos por WhatsApp al {phone} en cada paso, con el link para seguirlo.', follow: 'Seguir mi pedido',
@@ -181,6 +184,9 @@ const STR = {
     otpTitle: 'Confirm your WhatsApp', otpSent: 'We sent a 6-digit code to {phone}.', otpGo: 'Confirm code', otpAgain: 'Send another code',
     otpBad: 'Wrong code. Check the WhatsApp message.', otpMany: 'Too many attempts. Request a new code.', digit: 'Digit {n}',
     otpMsg: 'Your Brinco code is {code}. It expires in 10 minutes. Do not share it with anyone.', now: 'now',
+    otpSending: 'Sending your code on WhatsApp…', otpTest: 'Test mode: type any 6-digit code.',
+    wOffline: 'We could not reach Brinco. Check your connection and try again.', wErr: 'Something went wrong with Brinco. Try again.',
+    wSaveFail: 'Your order is paid, but we could not save the card in Brinco.',
     verifyBank: 'Verifying with your bank', noClose: 'Do not close this window.', processing: 'Processing your payment', verifyCard: 'Verifying your card', processingAria: 'Processing',
     done: 'Order confirmed!', order: 'Order', arrives: 'Arrives in {a}–{b} min', ready: 'Ready for pickup in {a} min',
     doneWa: 'We will update you on WhatsApp at {phone} at every step, with a link to track it.', follow: 'Track my order',
@@ -635,51 +641,77 @@ Brinco.fill = function (r) { fillVaultFooters(r || document); };
 Brinco._vault = { html: vaultHTML, footerHTML: vaultFooterHTML, fill: fillVaultFooters };
 
 /* --- src/core/70-brinco.js --- */
-/* ===== Brinco Kit · Cuenta Brinco compartida entre los negocios de sandscap.com.do =====
-   Sin servidor todavía: la cuenta (sin datos de tarjeta, solo marca/últimos 4/vencimiento) viaja en una cookie
-   del dominio padre, así todos los negocios en *.sandscap.com.do ven la misma cuenta en el mismo navegador.
-   En otros dominios (*.sandscap.io, localhost…) se queda en el localStorage de ese sitio. */
+/* ===== Brinco Kit · Cuenta Brinco =====
+   En *.sandscap.com.do la cuenta vive en el servidor de Brinco (brinco.sandscap.com.do):
+   el código de WhatsApp se revisa allá, la sesión es una cookie HttpOnly que el sitio no puede leer ni falsificar,
+   y las tarjetas son tokens del adquiriente que nunca llegan al navegador.
+   En este equipo solo quedan las direcciones de entrega y el correo (perfil local).
+   Fuera de sandscap.com.do (pruebas en localhost) se usa el modo demo, sin servidor y sin cobros. */
 const SHARED = /(^|\.)sandscap\.com\.do$/.test(location.hostname) ? 'sandscap.com.do' : null;
-const ck = {
-  get(n) { try { const m = document.cookie.match(new RegExp('(?:^|; )' + n + '=([^;]*)')); return m ? JSON.parse(decodeURIComponent(m[1])) : null; } catch (e) { return null; } },
-  set(n, v) {
-    if (!SHARED) return;
-    try { document.cookie = n + '=' + (v == null ? '' : encodeURIComponent(JSON.stringify(v))) + '; domain=.' + SHARED + '; path=/; max-age=' + (v == null ? 0 : 31536000) + '; secure; samesite=lax'; } catch (e) {}
-  }
-};
-// Versión liviana para la cookie (máx. ~4 KB): las 2 cuentas más recientes, sin textos de consentimiento
-const slim = (a) => {
-  const o = {};
-  Object.keys(a).map((k) => a[k]).filter(Boolean).sort((x, y) => (x.touched || x.createdAt || 0) - (y.touched || y.createdAt || 0)).slice(-2).forEach((x) => {
-    o[x.phone] = { phone: x.phone, name: x.name, email: x.email, createdAt: x.createdAt, touched: x.touched,
-      addresses: (x.addresses || []).slice(-2).map((d) => ({ id: d.id, label: d.label, street: d.street, sector: d.sector, ref: d.ref, main: d.main })),
-      cards: (x.cards || []).slice(-2).map((c) => ({ id: c.id, brand: c.brand, last4: c.last4, exp: c.exp, processor: c.processor, main: c.main, declineCode: c.declineCode || undefined })),
-      merchants: (x.merchants || []).slice(-3).map((m) => ({ name: m.name, at: m.at })) };
-  });
-  return o;
-};
-const B = {
-  accounts() {
-    const loc = store.get('brinco_accounts', {}), sh = ck.get('brinco_acc');
-    if (!sh) return loc;
-    Object.keys(sh).forEach((k) => { loc[k] = Object.assign({}, loc[k] || {}, sh[k], { consents: (loc[k] && loc[k].consents) || [] }); });
-    return loc;
+const WALLET = ((SCRIPT && SCRIPT.getAttribute('data-wallet')) || (SHARED ? 'https://brinco.sandscap.com.do' : '')).replace(/\/$/, '');
+// La cuenta ya no viaja en cookies compartidas ni se guarda en el localStorage: se borra lo que dejaron versiones anteriores
+(function cleanup() {
+  if (SHARED) ['brinco_acc', 'brinco_s'].forEach((n) => { try { document.cookie = n + '=; domain=.' + SHARED + '; path=/; max-age=0; secure; samesite=lax'; } catch (e) {} });
+  if (WALLET) { store.del('brinco_accounts'); store.del('brinco_session'); }
+})();
+const W = {
+  on: !!WALLET, me: null, cards: [], otpMode: 'test', hadAccount: false, ready: Promise.resolve(),
+  call(path, method, body) {
+    return fetch(WALLET + '/v1' + path, { method: method || 'GET', credentials: 'include', headers: body ? { 'Content-Type': 'application/json' } : {}, body: body ? JSON.stringify(body) : undefined })
+      .catch(() => { throw Object.assign(new Error(t('wOffline')), { status: 0 }); })
+      .then((r) => r.json().catch(() => ({})).then((d) => { if (!r.ok) throw Object.assign(new Error(d.error || t('wErr')), { status: r.status }); return d; }));
   },
-  save(a) { store.set('brinco_accounts', a); ck.set('brinco_acc', slim(a)); },
-  session() { return (SHARED && ck.get('brinco_s')) || store.get('brinco_session', null); },
-  me() { const s = B.session(); if (!s) return null; return B.accounts()[s.phone] || null; },
-  login(phone) { const s = { phone: phoneDigits(phone), at: Date.now() }; store.set('brinco_session', s); ck.set('brinco_s', s); },
-  logout() { store.del('brinco_session'); ck.set('brinco_s', null); },
-  upsert(phone, fn) { const a = B.accounts(); const k = phoneDigits(phone); a[k] = fn(a[k] || null); if (a[k]) a[k].touched = Date.now(); B.save(a); return a[k]; },
+  apply(d) { W.me = d.account || null; W.cards = d.cards || []; if (d.otp_mode) W.otpMode = d.otp_mode; },
+  loaded: false,
+  refresh() { W.ready = W.call('/me').then(W.apply, () => {}).then(() => { W.loaded = true; }); return W.ready; },
+  sendCode(phone) { return W.call('/otp/send', 'POST', { phone }).then((d) => { W.otpMode = d.test_mode ? 'test' : 'whatsapp'; W.hadAccount = !!d.has_account; return d; }); },
+  verify(phone, code, name) { return W.call('/otp/verify', 'POST', { phone, code, name: name || '' }).then((d) => { W.apply(d); return d; }); },
+  saveCard(card, text) {
+    return W.call('/cards', 'POST', { merchant: C().negocio, token: card.token, brand: card.brand, last4: card.last4, exp: card.exp, processor: 'AZUL',
+      consent: { accepted: true, text, version: '2026-10' } }).then((d) => { W.cards = d.cards || W.cards; return d; });
+  },
+  pay(cardId, amount, reference) { return W.call('/pay', 'POST', { merchant: C().negocio, card_id: cardId, amount, reference, description: C().nombre + ' ' + reference }); },
+  logout() { const done = () => { W.me = null; W.cards = []; }; return W.call('/logout', 'POST').then(done, done); }
+};
+// Perfil local (solo este equipo): nombre, correo y direcciones de la cuenta en sesión
+const P = {
+  all() { return store.get('brinco_profile', {}); },
+  get(phone) { return P.all()[phone] || {}; },
+  set(phone, v) { const a = P.all(); a[phone] = v; store.set('brinco_profile', a); }
+};
+// Modo demo (sin servidor de Brinco): todo en el localStorage de este sitio, sin cookies
+const demo = {
+  accounts() { return store.get('brinco_accounts', {}); },
+  save(a) { store.set('brinco_accounts', a); },
+  session() { return store.get('brinco_session', null); },
+  me() { const s = demo.session(); if (!s) return null; return demo.accounts()[s.phone] || null; },
+  login(phone) { store.set('brinco_session', { phone: phoneDigits(phone), at: Date.now() }); },
+  logout() { store.del('brinco_session'); },
+  upsert(phone, fn) { const a = demo.accounts(); const k = phoneDigits(phone); a[k] = fn(a[k] || null); if (a[k]) a[k].touched = Date.now(); demo.save(a); return a[k]; },
   consent(acc, type, text) { (acc.consents = acc.consents || []).push({ type, text, at: new Date().toISOString(), channel: 'web', v: '2026-10' }); }
 };
-// Primera visita con la cuenta compartida: sube a la cookie lo que ya estaba guardado en este sitio
-if (SHARED) {
-  const l0 = store.get('brinco_accounts', null), s0 = store.get('brinco_session', null);
-  if (l0 && Object.keys(l0).length && !ck.get('brinco_acc')) ck.set('brinco_acc', slim(l0));
-  if (s0 && !ck.get('brinco_s')) ck.set('brinco_s', s0);
-}
+const B = !W.on ? demo : {
+  accounts() { const m = B.me(); return m ? { [m.phone]: m } : {}; },
+  session() { return W.me ? { phone: W.me.phone } : null; },
+  me() {
+    if (!W.me) return null;
+    const p = P.get(W.me.phone);
+    return { phone: W.me.phone, name: W.me.name || p.name || '', email: p.email || '', addresses: p.addresses || [], consents: p.consents || [], merchants: [],
+      cards: W.cards.map((c, i) => ({ id: c.id, brand: String(c.brand || '').toLowerCase(), last4: c.last4, exp: c.exp, processor: String(c.processor || '').toLowerCase(), main: i === 0 })) };
+  },
+  login() {},          // la sesión la abre el servidor de Brinco cuando el código es correcto
+  logout() { return W.logout(); },
+  upsert(phone, fn) {
+    const k = phoneDigits(phone), cur = B.me();
+    const acc = fn(cur && cur.phone === k ? JSON.parse(JSON.stringify(cur)) : null);
+    if (acc) P.set(k, { name: acc.name || '', email: acc.email || '', addresses: (acc.addresses || []).slice(-3), consents: (acc.consents || []).slice(-6) });
+    return acc;
+  },
+  consent: demo.consent
+};
+if (W.on) W.refresh();
 Brinco._account = B;
+Brinco._wallet = W;
 Brinco._shared = SHARED;
 
 /* --- src/core/75-inapp.js --- */
@@ -885,7 +917,8 @@ function readAzul(prefix) {
   if (!(ok.num && ok.exp && ok.cvv && ok.holder)) return null;
   const d = digits(num);
   // Solo lo que el procesador devolvería con el token: nunca el número completo ni el CVV
-  return { brand, last4: d.slice(-4), exp, holder, declineCode: d === '4000000000000002' ? '51' : null };
+  const tok = 'tok_test_' + Array.from(crypto.getRandomValues(new Uint8Array(20)), (b) => 'abcdefghijklmnopqrstuvwxyz0123456789'[b % 36]).join('');
+  return { brand, last4: d.slice(-4), exp, holder, token: tok, declineCode: d === '4000000000000002' ? '51' : null };
 }
 // Limpia los campos de tarjeta del DOM (que no queden en memoria de la página)
 function wipeAzul(prefix) { ['Num', 'Cvv'].forEach((k) => { const el = body && body.querySelector('#' + prefix + k); if (el) el.value = ''; }); }
@@ -1008,9 +1041,17 @@ function payWithCard() {
 // --- Código por WhatsApp (simulado: aparece como notificación) ---
 function sendOtp(phone, next) {
   S.otpPhone = phoneDigits(phone);
-  S.otpCode = String(Math.floor(100000 + Math.random() * 900000));
   S.otpNext = next;
   S.otpTries = 0;
+  if (W.on) {
+    show('verify', `<div class="bk-view bk-verify bk-flat">${bword(28)}<div class="bk-spin"></div><p class="bk-muted">${t('otpSending')}</p></div>`, { brinco: true });
+    W.sendCode(S.otpPhone).then(() => otpView(), (e) => { toast(e.message); back(); });
+    return;
+  }
+  S.otpCode = String(Math.floor(100000 + Math.random() * 900000));
+  otpView();
+}
+function otpView() {
   show('otp', `
     <div class="bk-center bk-stack">
       ${bword(28)}
@@ -1018,6 +1059,7 @@ function sendOtp(phone, next) {
       <p class="bk-muted">${t('otpSent', { phone: '<b>' + fmtPhone(S.otpPhone) + '</b>' })}</p>
     </div>
     <div class="bk-otp" id="otpBoxes"><input inputmode="numeric" autocomplete="one-time-code" aria-label="${t('digit', { n: 1 })}">${[2, 3, 4, 5, 6].map((n) => `<input inputmode="numeric" aria-label="${t('digit', { n })}">`).join('')}</div>
+    ${W.on && W.otpMode === 'test' ? `<p class="bk-info-msg" role="status">${t('otpTest')}</p>` : ''}
     <p class="bk-muted bk-center" id="otpMsg" role="alert"></p>
     <button class="bk-pay bk-blue" type="button" id="otpGo">${t('otpGo')}</button>
     <button class="bk-link" type="button" id="otpAgain">${t('otpAgain')}</button>`, { brinco: true });
@@ -1049,6 +1091,18 @@ function sendOtp(phone, next) {
     if (checked || S.view !== 'otp') return;
     const code = boxes.map((x) => x.value).join('');
     if (code.length < 6) return;
+    if (W.on) {
+      checked = true;
+      const name = (S.pendingPay && S.pendingPay.name) || (S.form && S.form.coName) || '';
+      W.verify(S.otpPhone, code, name).then(() => { track('codigo_ok'); S.otpNext && S.otpNext(); }, (e) => {
+        checked = false; S.otpTries++;
+        if (S.view !== 'otp') return;
+        $('#otpBoxes', body).classList.add('bk-bad');
+        $('#otpMsg', body).textContent = e.message;
+        boxes.forEach((x) => { x.value = ''; }); boxes[0].focus();
+      });
+      return;
+    }
     if (/^\d{6}$/.test(code)) { checked = true; hideWa(); track('codigo_ok'); S.otpNext && S.otpNext(); }
     else {
       S.otpTries++;
@@ -1059,6 +1113,7 @@ function sendOtp(phone, next) {
   }
   $('#otpGo', body).addEventListener('click', check);
   $('#otpAgain', body).addEventListener('click', () => sendOtp(S.otpPhone, S.otpNext));
+  if (W.on) return;   // el código llega por WhatsApp desde el servidor de Brinco; aquí nunca se muestra
   const code = S.otpCode;
   setTimeout(() => { if (S.view === 'otp' && S.otpCode === code) showWa(t('otpMsg', { code: `<b>${code.slice(0, 3)} ${code.slice(3)}</b>` }), () => { if (S.view === 'otp') fill(S.otpCode, 0); }); }, 900);
 }
@@ -1078,6 +1133,21 @@ function verify3ds() {
 }
 function processing() {
   const p = S.pendingPay;
+  if (W.on && p && p.via === 'brinco') {
+    p.no = p.no || Brinco.orders.newNo();
+    show('verify', `<div class="bk-view bk-verify bk-flat">
+    ${bword(30)}
+    <div class="bk-spin" aria-label="${t('processingAria')}"></div>
+    <p class="bk-h3">${t('processing')}</p>
+    <p class="bk-muted">${brandName(p.card.brand)} •••• ${p.card.last4} · ${fmt(p.total)}</p></div>`, { replace: true, brinco: true });
+    $('#coBack', root).hidden = true;
+    W.pay(p.card.id, p.total, p.no).then((r) => { p.auth = r.ref; charge(); }, (e) => {
+      track('rechazo', { codigo: e.status || 'error', metodo: 'brinco' });
+      if (e.status === 401) { VIEWS.bLogin({ replace: true, phone: p.phone, msg: e.message }); return; }
+      VIEWS.bSummary({ root: true, error: e.message });
+    });
+    return;
+  }
   show('verify', `<div class="bk-view bk-verify bk-flat">
     ${bword(30)}
     <div class="bk-spin" aria-label="${t('processingAria')}"></div>
@@ -1100,18 +1170,30 @@ function charge() {
   const tt = totals(p.mode);
   const src = Brinco.source();
   const order = {
-    no: Brinco.orders.newNo(), negocio: C().negocio,
+    no: p.no || Brinco.orders.newNo(), negocio: C().negocio,
     at: Date.now(), items: tt.items.map((c) => { const x = { name: c.name, detail: c.detail || '', qty: c.qty, unit: c.unit, img: c.img || '' }; if (c.nota) x.nota = String(c.nota); return x; }),
     sub: tt.sub, ship: tt.ship, disc: tt.disc || 0, coupon: S.coupon ? S.coupon.codigo : null,
     itbis: tt.tax || 0, itbisTasa: tt.taxRate, itbisIncluido: tt.taxIncl, total: tt.total, mode: p.mode,
     tienda: p.mode === 'pickup' && p.store ? { nombre: p.store.nombre || '', direccion: p.store.direccion || '', mapa: p.store.mapa || '' } : null,
     programado: p.prog ? new Date(p.prog).toISOString() : null,
     name: p.name, phone: p.phone, address: p.address, via: p.via,
-    card: { brand: p.card.brand, last4: p.card.last4 }, auth: authCode(),
+    card: { brand: p.card.brand, last4: p.card.last4 }, auth: p.auth || authCode(),
     src: src.source, med: src.medium, brincoNew: false
   };
   // Cuenta Brinco: crear o agregar tarjeta (solo marca, últimos 4, vencimiento)
-  if (p.via === 'tarjeta' && p.save) {
+  if (p.via === 'tarjeta' && p.save && W.on) {
+    // Cuenta Brinco en el servidor: la tarjeta se guarda como token del adquiriente, con el texto exacto del consentimiento
+    B.upsert(p.phone, (acc) => {
+      acc = acc || { phone: p.phone, name: p.name, email: '', addresses: [] };
+      acc.name = acc.name || p.name;
+      B.consent(acc, 'cuenta', CONSENT_ACC);
+      if (p.address && !acc.addresses.some((a) => a.street === p.address.street)) acc.addresses.push(Object.assign({ id: Date.now(), main: !acc.addresses.length }, p.address));
+      return acc;
+    });
+    W.saveCard(p.card, CONSENT_CARD).then(() => track('brinco_tarjeta'), (e) => toast(t('wSaveFail') + ' ' + e.message, 6000));
+    order.brincoNew = !W.hadAccount;
+    track('brinco_cuenta', { nueva: !W.hadAccount });
+  } else if (p.via === 'tarjeta' && p.save) {
     const existed = !!B.accounts()[p.phone];
     B.upsert(p.phone, (acc) => {
       acc = acc || { phone: p.phone, name: p.name, email: '', addresses: [], cards: [], createdAt: Date.now(), merchants: [] };
@@ -1267,6 +1349,13 @@ VIEWS.bCard = function () {
     const logo = Brinco._img(card.brand === 'mastercard' ? 'mastercard-id-check.webp' : 'visa-secure.webp');
     show('verify', `<div class="bk-view bk-verify bk-flat"><img class="bk-logo3ds" src="${logo}" alt=""><p class="bk-h3">${t('verifyCard')}</p><p class="bk-muted">${brandName(card.brand)} •••• ${card.last4}</p><div class="bk-spin"></div></div>`, { replace: true, brinco: true });
     $('#coBack', root).hidden = true;
+    if (W.on) {
+      W.saveCard(card, CONSENT_CARD).then(() => { track('brinco_tarjeta'); VIEWS.bSummary({ root: true }); }, (e) => {
+        if (e.status === 401) { VIEWS.bLogin({ replace: true, msg: e.message }); return; }
+        VIEWS.bCard(); toast(e.message, 6000);
+      });
+      return;
+    }
     setTimeout(() => {
       if (!root.classList.contains('bk-open') || !B.session()) return;
       B.upsert(B.session().phone, (acc) => {
@@ -1326,7 +1415,7 @@ VIEWS.bSummary = function (o) {
     const addr = addrs.find((a) => a.id === S.bAddr) || null;
     S.mode = mode;
     S.pendingPay = { via: 'brinco', name: me.name, phone: me.phone, mode, address: mode === 'delivery' ? addr : null,
-      card: { brand: card.brand, last4: card.last4, exp: card.exp, declineCode: card.declineCode || null }, total: totals(mode).total,
+      card: { id: card.id, brand: card.brand, last4: card.last4, exp: card.exp, declineCode: card.declineCode || null }, total: totals(mode).total,
       store: mode === 'pickup' ? curStore() : null, prog: progOn() ? S.prog : null };
     const pay = () => { track('pago_enviado', { total: S.pendingPay.total, metodo: 'brinco' }); processing(); };
     pay();
@@ -1337,6 +1426,7 @@ VIEWS.bSummary = function (o) {
 let lastFocus = null, prevOverflow = '';
 function open() {
   if (!READY.done) { Brinco.ready(open); return; }
+  if (W.on && !W.loaded) { W.ready.then(open); return; }   // primero saber si hay sesión Brinco (máx. lo que tarde /me)
   const c = cart();
   if (!c || !(c.items() || []).length) { toast(t('emptyCart')); return; }
   ensureRoot();
