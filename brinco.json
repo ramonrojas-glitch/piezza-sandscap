@@ -31,5 +31,19 @@
     "listaWa": "¡Tu pizza está lista para recoger! 🍕 Orden {no}"
   },
   "contacto": { "direccion": "[Dirección del local]", "telefono": "[Teléfono / WhatsApp]", "correo": "[Correo]", "instagram": "[@usuario]" },
-  "idioma": "es"
+  "idioma": "es",
+  "catalogo": {
+    "productos": {
+      "0": { "P": 395, "M": 695, "F": 995 },
+      "1": { "P": 450, "M": 795, "F": 1095 },
+      "2": { "P": 450, "M": 795, "F": 1095 },
+      "3": { "P": 425, "M": 750, "F": 1050 }
+    },
+    "extras": {
+      "queso": 75,
+      "champ": 60,
+      "jala": 50,
+      "toci": 90
+    }
+  }
 }

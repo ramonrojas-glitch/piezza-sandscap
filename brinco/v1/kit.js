@@ -4,7 +4,7 @@
 
 /* --- src/core/00-base.js --- */
 /* ===== Brinco Kit · base: namespace, helpers ===== */
-const VERSION = '1.2.0';
+const VERSION = '1.3.0';
 const SCRIPT = document.currentScript || (function () {
   const s = document.querySelectorAll('script[src*="kit.js"]'); return s[s.length - 1] || null;
 })();
@@ -670,7 +670,10 @@ const W = {
     return W.call('/cards', 'POST', { merchant: C().negocio, token: card.token, brand: card.brand, last4: card.last4, exp: card.exp, processor: 'AZUL',
       consent: { accepted: true, text, version: '2026-10' } }).then((d) => { W.cards = d.cards || W.cards; return d; });
   },
-  pay(cardId, amount, reference) { return W.call('/pay', 'POST', { merchant: C().negocio, card_id: cardId, amount, reference, description: C().nombre + ' ' + reference }); },
+  // El Wallet recalcula el total con el "catalogo" de este brinco.json; si no cuadra, no cobra.
+  pay(cardId, amount, reference, order) {
+    return W.call('/pay', 'POST', Object.assign({ merchant: C().negocio, card_id: cardId, amount, reference, description: C().nombre + ' ' + reference }, order || {}));
+  },
   logout() { const done = () => { W.me = null; W.cards = []; }; return W.call('/logout', 'POST').then(done, done); }
 };
 // Perfil local (solo este equipo): nombre, correo y direcciones de la cuenta en sesión
@@ -865,6 +868,19 @@ function totals(mode) {
   const tax = ic.incl ? 0 : Math.round(base * ic.tasa);
   return { items, sub, ship, disc, tax, taxRate: ic.tasa, taxIncl: ic.incl, total: base + tax };
 }
+// Revisión: cada línea del carrito debe costar lo mismo que dice el "catalogo" de brinco.json (lo que usa el Wallet).
+function skuUnit(cat, sku) {
+  if (!cat || !sku) return null;
+  const pr = cat.productos && cat.productos[sku.p];
+  let u = typeof pr === 'number' ? pr : pr && typeof pr[sku.v] === 'number' ? pr[sku.v] : null;
+  if (u == null) return null;
+  for (const x of sku.x || []) { const e = cat.extras && cat.extras[x]; if (typeof e !== 'number') return null; u += e; }
+  return u;
+}
+Brinco.checkPrices = function () {
+  const items = cart() ? cart().items() || [] : [];
+  return items.filter((c) => skuUnit(C().catalogo, c.sku) !== c.unit).map((c) => ({ name: c.name, sku: c.sku || null, unit: c.unit, menu: skuUnit(C().catalogo, c.sku) }));
+};
 function sumHTML(mode) {
   const tt = totals(mode);
   return `<div class="bk-sum">
@@ -1141,7 +1157,9 @@ function processing() {
     <p class="bk-h3">${t('processing')}</p>
     <p class="bk-muted">${brandName(p.card.brand)} •••• ${p.card.last4} · ${fmt(p.total)}</p></div>`, { replace: true, brinco: true });
     $('#coBack', root).hidden = true;
-    W.pay(p.card.id, p.total, p.no).then((r) => { p.auth = r.ref; charge(); }, (e) => {
+    const tt0 = totals(p.mode);
+    const order = { items: tt0.items.map((c) => ({ sku: c.sku || null, qty: c.qty })), mode: p.mode, coupon: S.coupon ? S.coupon.codigo : null };
+    W.pay(p.card.id, p.total, p.no, order).then((r) => { p.auth = r.ref; charge(); }, (e) => {
       track('rechazo', { codigo: e.status || 'error', metodo: 'brinco' });
       if (e.status === 401) { VIEWS.bLogin({ replace: true, phone: p.phone, msg: e.message }); return; }
       VIEWS.bSummary({ root: true, error: e.message });

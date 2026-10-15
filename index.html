@@ -479,8 +479,10 @@ Finalizar pedido
     $('dTotal').textContent = fmt(total);
   }
   // La caja del Brinco Kit usa esto para leer el pedido y vaciarlo al confirmar el pago
+  // Referencia del menú para Brinco (la usa el Wallet para recalcular el precio): "pizza-tamaño-extras" → {p, v, x}
+  function pzSku(key){ var k = String(key || '').split('-'), z = SIZES[+k[1]]; return {p:k[0], v:z ? z.s : '', x:k.slice(2).join('-').split('.').filter(Boolean)}; }
   window.BrincoCart = window.PZCart = {
-    items: function(){ return st.cart.map(function(c){ return {name:c.name, detail:c.detail, qty:c.qty, unit:c.unit, img:c.img}; }); },
+    items: function(){ return st.cart.map(function(c){ return {name:c.name, detail:c.detail, qty:c.qty, unit:c.unit, img:c.img, sku:pzSku(c.key)}; }); },
     total: function(){ return st.cart.reduce(function(a,c){ return a + c.qty*c.unit; }, 0); },
     clear: function(){ st.cart = []; save(); renderCart(); },
     close: function(){ closeCart(); },
