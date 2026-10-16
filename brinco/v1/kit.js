@@ -118,7 +118,7 @@ const STR = {
     addCard: 'Agrega tu tarjeta', cardConsent: 'Guardar esta tarjeta para mis compras en negocios Brinco', cardConsentSmall: 'Brinco no guarda tu tarjeta: la guarda tu procesador de pago (AZUL, CardNet o MIO).',
     cardConsentErr: 'Marca la casilla para guardar la tarjeta.', saveCard: 'Guardar tarjeta',
     hello: 'Hola, {name}', again: 'de nuevo', delivTitle: 'Entrega', cardTitle: 'Tarjeta', readyIn: 'Lista en {a} min', expires: 'Vence {exp}', main: 'principal',
-    addOther: '+ Agregar otra tarjeta', confirmPay: 'Confirmar y pagar {total}', notYou: '¿No eres {name}? Cerrar sesión',
+    addOther: '+ Agregar otra tarjeta', addAddr: '+ Agregar otra dirección', newAddr: 'Nueva dirección', saveAddr: 'Guardar dirección', plat: 'Tarifa de servicio', confirmPay: 'Confirmar y pagar {total}', notYou: '¿No eres {name}? Cerrar sesión',
    
     vaultLine: 'Brinco <b>no guarda</b> tu tarjeta. La protegen <b>AZUL</b>, <b>CardNet</b> o <b>MIO</b>.',
     vaultT: 'Brinco no guarda tu tarjeta', vaultTx: 'Tu tarjeta queda guardada y protegida por el procesador de pago certificado PCI DSS. Brinco solo recibe un código seguro (token) que no sirve fuera de tu cuenta.',
@@ -209,7 +209,7 @@ const STR = {
     addCard: 'Add your card', cardConsent: 'Save this card for my purchases at Brinco businesses', cardConsentSmall: 'Brinco does not store your card: your payment processor (AZUL, CardNet or MIO) does.',
     cardConsentErr: 'Check the box to save the card.', saveCard: 'Save card',
     hello: 'Hi, {name}', again: 'again', delivTitle: 'Delivery', cardTitle: 'Card', readyIn: 'Ready in {a} min', expires: 'Expires {exp}', main: 'main',
-    addOther: '+ Add another card', confirmPay: 'Confirm and pay {total}', notYou: 'Not {name}? Sign out',
+    addOther: '+ Add another card', addAddr: '+ Add another address', newAddr: 'New address', saveAddr: 'Save address', plat: 'Service fee', confirmPay: 'Confirm and pay {total}', notYou: 'Not {name}? Sign out',
    
     vaultLine: 'Brinco <b>does not store</b> your card. It is protected by <b>AZUL</b>, <b>CardNet</b> or <b>MIO</b>.',
     vaultT: 'Brinco does not store your card', vaultTx: 'Your card is stored and protected by the PCI DSS–certified payment processor. Brinco only receives a secure code (token) that is useless outside your account.',
@@ -776,6 +776,9 @@ const cart = () => window.BrincoCart || null;
 // v1.1: ITBIS aparte, envío gratis desde un monto, varias tiendas, pedidos programados
 const itbisCfg = () => { const i = C().itbis || {}; return { incl: i.incluido !== false, tasa: Number(i.tasa != null ? i.tasa : 0.18) }; };
 const freeFrom = () => Number(C().envioGratisDesde) || 0;
+// Tarifa de servicio de Brinco: fija por pedido con delivery, la paga el cliente, va aparte del ITBIS. brinco.json "cargoPlataforma" (por defecto 100).
+const PLAT = () => { const v = C().cargoPlataforma; return v == null ? 100 : Number(v) || 0; };
+const platFor = (mode) => (mode === 'delivery' && ent().delivery ? PLAT() : 0);
 function shipFor(mode, base) { if (mode !== 'delivery') return 0; const g = freeFrom(); return g && base >= g ? 0 : SHIP(); }
 function stores() {
   const l = Array.isArray(C().tiendas) && C().tiendas.length ? C().tiendas : [Object.assign({ nombre: C().nombre }, C().tienda || {})];
@@ -899,7 +902,8 @@ function totals(mode) {
   const ship = shipFor(mode || S.mode, sub - disc);
   const ic = itbisCfg(), base = Math.max(0, sub - disc + ship);
   const tax = ic.incl ? 0 : Math.round(base * ic.tasa);
-  return { items, sub, ship, disc, tax, taxRate: ic.tasa, taxIncl: ic.incl, total: base + tax };
+  const plat = platFor(mode || S.mode);
+  return { items, sub, ship, disc, tax, plat, taxRate: ic.tasa, taxIncl: ic.incl, total: base + tax + plat };
 }
 // Revisión: cada línea del carrito debe costar lo mismo que dice el "catalogo" de brinco.json (lo que usa el Wallet).
 function skuUnit(cat, sku) {
@@ -922,6 +926,7 @@ function sumHTML(mode) {
     <div class="bk-l"><span>${(mode || S.mode) === 'delivery' ? t('ship') : t('pickup')}</span><span>${tt.ship ? fmt(tt.ship) : t('free')}</span></div>
     ${tt.disc ? `<div class="bk-l bk-l-disc"><span>${t('coupon')} ${esc(S.coupon.codigo)}</span><span>− ${fmt(tt.disc)}</span></div>` : ''}
     ${tt.tax ? `<div class="bk-l bk-l-tax"><span>${t('itbisLine', { p: Math.round(tt.taxRate * 100) })}</span><span>${fmt(tt.tax)}</span></div>` : ''}
+    ${tt.plat ? `<div class="bk-l bk-l-plat"><span>${t('plat')}</span><span>${fmt(tt.plat)}</span></div>` : ''}
     <div class="bk-l bk-tot"><span>${t('total')}</span><span>${fmt(tt.total)}</span></div>
     ${tt.taxIncl ? `<span class="bk-note">${t('itbis')}</span>` : ''}
   </div>`;
@@ -1351,7 +1356,7 @@ function charge() {
     no: p.no || Brinco.orders.newNo(), negocio: C().negocio,
     at: Date.now(), items: tt.items.map((c) => { const x = { name: c.name, detail: c.detail || '', qty: c.qty, unit: c.unit, img: c.img || '' }; if (c.nota) x.nota = String(c.nota); return x; }),
     sub: tt.sub, ship: tt.ship, disc: tt.disc || 0, coupon: S.coupon ? S.coupon.codigo : null,
-    itbis: tt.tax || 0, itbisTasa: tt.taxRate, itbisIncluido: tt.taxIncl, total: tt.total, mode: p.mode,
+    itbis: tt.tax || 0, plat: tt.plat || 0, itbisTasa: tt.taxRate, itbisIncluido: tt.taxIncl, total: tt.total, mode: p.mode,
     tienda: p.mode === 'pickup' && p.store ? { nombre: p.store.nombre || '', direccion: p.store.direccion || '', mapa: p.store.mapa || '' } : null,
     programado: p.prog ? new Date(p.prog).toISOString() : null,
     name: p.name, phone: p.phone, address: p.address, via: p.via,
@@ -1415,6 +1420,7 @@ VIEWS.done = function (o) {
       <div class="bk-l bk-dim"><span>${o.mode === 'delivery' ? t('ship') : t('pickup')}</span><span>${o.ship ? fmt(o.ship) : t('free')}</span></div>
       ${o.disc ? `<div class="bk-l bk-dim"><span>${t('coupon')} ${esc(o.coupon || '')}</span><span>− ${fmt(o.disc)}</span></div>` : ''}
       ${o.itbis ? `<div class="bk-l bk-dim"><span>${t('itbisLine', { p: Math.round((o.itbisTasa || 0.18) * 100) })}</span><span>${fmt(o.itbis)}</span></div>` : ''}
+      ${o.plat ? `<div class="bk-l bk-dim"><span>${t('plat')}</span><span>${fmt(o.plat)}</span></div>` : ''}
       <div class="bk-l bk-rtot"><span>${t('paid')}</span><span>${fmt(o.total)}</span></div>
       <div class="bk-rmeta">${o.via === 'brinco' ? t('paidBrinco') : ''}${brandName(o.card.brand)} •••• ${esc(o.card.last4)} · ${t('auth')} ${esc(o.auth)}${o.address ? '<br>' + t('deliverTo') + ': ' + esc(o.address.street) + ', ' + esc(o.address.sector) + (o.address.lat != null ? ' · <a href="' + mapURL(o.address) + '" target="_blank" rel="noopener">' + t('mapLink') + '</a>' : '') : ''}${o.tienda && stores().length > 1 ? '<br>' + t('pickAt') + ': ' + esc(o.tienda.nombre) + (o.tienda.direccion ? ', ' + esc(o.tienda.direccion) : '') : ''}</div>
     </div>
@@ -1605,6 +1611,7 @@ VIEWS.bSummary = function (o) {
     ${o.error ? `<div class="bk-azul-err" role="alert">${esc(o.error)}</div>` : ''}
     <div class="bk-sec"><h3 class="bk-blue-h">${t('delivTitle')}</h3>
       ${addrs.map((a) => `<button type="button" class="bk-opt" role="radio" data-addr="${a.id}" aria-checked="${S.bAddr === a.id}"><span class="bk-dot"></span><span class="bk-otx"><b>${esc(a.label || t('home'))} · ${t('delivery')} ${totals('delivery').ship ? fmt(totals('delivery').ship) : t('free')}</b><span>${esc(a.street)}, ${esc(a.sector)}</span></span></button>`).join('')}
+      ${e.delivery ? `<button class="bk-link bk-link-left" type="button" id="bAddAddr">${t('addAddr')}</button>` : ''}
       ${e.pickup ? `<button type="button" class="bk-opt" role="radio" data-addr="pickup" aria-checked="${S.bAddr === 'pickup'}"><span class="bk-dot"></span><span class="bk-otx"><b>${t('pickup')} · ${t('free')}</b><span>${t('readyIn', { a: e.pickupMin })}</span></span></button>` : ''}
       ${e.delivery && freeFrom() ? freeHint() : ''}
     </div>
@@ -1622,6 +1629,7 @@ VIEWS.bSummary = function (o) {
   $$('[data-addr]', body).forEach((b) => b.addEventListener('click', () => { S.bAddr = b.dataset.addr === 'pickup' ? 'pickup' : +b.dataset.addr; VIEWS.bSummary({ replace: true }); }));
   $$('[data-card]', body).forEach((b) => b.addEventListener('click', () => { S.bCard = +b.dataset.card; VIEWS.bSummary({ replace: true }); }));
   $('#bAddCard', body).addEventListener('click', () => VIEWS.bCard());
+  const aa = $('#bAddAddr', body); if (aa) aa.addEventListener('click', () => VIEWS.bAddr());
   bindProg('b');
   $$('[data-store]', body).forEach((b) => b.addEventListener('click', () => { S.store = +b.dataset.store; $$('[data-store]', body).forEach((x) => x.setAttribute('aria-checked', String(x === b))); }));
   $('#bOut', body).addEventListener('click', () => { B.logout(); S.bAddr = S.bCard = null; VIEWS.checkout({ replace: true }); });
@@ -1636,6 +1644,41 @@ VIEWS.bSummary = function (o) {
       store: mode === 'pickup' ? curStore() : null, prog: progOn() ? S.prog : null };
     const pay = () => { track('pago_enviado', { total: S.pendingPay.total, metodo: 'brinco' }); processing(); };
     pay();
+  });
+};
+
+// Nueva dirección para una cuenta Brinco que ya existe (con GPS y autocompletado)
+VIEWS.bAddr = function () {
+  S.geo = null;
+  show('bAddr', `
+    <p class="bk-h3">${t('newAddr')}</p>
+    <div class="bk-seg" role="group" aria-label="${t('label')}"><button type="button" data-lbl="${t('home')}" aria-pressed="true">${t('home')}</button><button type="button" data-lbl="${t('work')}" aria-pressed="false">${t('work')}</button></div>
+    <div class="bk-fld"><label for="bStreet">${t('street')}</label><input id="bStreet" autocomplete="street-address" placeholder="${t('streetPh')}"><span class="bk-err">${t('streetErr')}</span></div>
+    <div class="bk-row2">
+      <div class="bk-fld"><label for="bSector">${t('sector')}</label><select id="bSector"><option value="">${t('choose')}</option>${(C().sectores || []).map((s) => `<option>${esc(s)}</option>`).join('')}</select><span class="bk-err">${t('sectorErr')}</span></div>
+      <div class="bk-fld"><label for="bRef">${t('ref')}</label><input id="bRef" placeholder="${t('refPh')}"><span class="bk-err"></span></div>
+    </div>
+    <button class="bk-pay bk-blue" type="button" id="bSaveAddr">${t('saveAddr')}</button>`, { brinco: true });
+  let lbl = t('home');
+  $$('[data-lbl]', body).forEach((b) => b.addEventListener('click', () => { lbl = b.dataset.lbl; $$('[data-lbl]', body).forEach((x) => x.setAttribute('aria-pressed', String(x === b))); }));
+  ['bStreet', 'bSector'].forEach((k) => { const el = $('#' + k, body); el.addEventListener('input', () => setErr(k, false)); el.addEventListener('change', () => setErr(k, false)); });
+  geoAddr('b');
+  $('#bSaveAddr', body).addEventListener('click', () => {
+    const street = $('#bStreet', body).value.trim(), sector = $('#bSector', body).value, ref = $('#bRef', body).value.trim();
+    let ok = true;
+    if (street.length < 4) { setErr('bStreet', true); ok = false; }
+    if (!sector) { setErr('bSector', true); ok = false; }
+    if (!ok) return;
+    const id = Date.now(), phone = (B.me() || {}).phone || B.session().phone;
+    B.upsert(phone, (acc) => {
+      acc = acc || { phone, addresses: [], cards: [], createdAt: Date.now(), merchants: [] };
+      acc.addresses = (acc.addresses || []).filter((a) => a.street !== street);
+      acc.addresses.push(Object.assign({ id, label: lbl, street, sector, ref, main: !acc.addresses.length }, S.geo ? { lat: S.geo.lat, lng: S.geo.lng } : {}));
+      return acc;
+    });
+    track('brinco_direccion');
+    S.bAddr = id;
+    VIEWS.bSummary({ replace: true });
   });
 };
 
@@ -1988,7 +2031,7 @@ Brinco._ui.isOpen = () => !!(root && root.classList.contains('bk-open'));
     $('visitsS').textContent = visits.length ? T('pn_srcs', { n: uniq(visits.map(function (v) { return v.src; })) }) : ' ';
     $('buys').textContent = orders.length;
     $('conv').textContent = T('pn_convX', { x: pct(buyers(), visitors()) });
-    var rev = orders.reduce(function (a, o) { return a + (o.total || 0); }, 0);
+    var rev = orders.reduce(function (a, o) { return a + (o.total || 0) - (o.plat || 0); }, 0);
     $('rev').textContent = M.fmt(rev);
     $('aov').textContent = orders.length ? T('pn_aov', { x: M.fmt(rev / orders.length) }) : ' ';
 
@@ -2014,7 +2057,7 @@ Brinco._ui.isOpen = () => !!(root && root.classList.contains('bk-open'));
     var srcs = {};
     var row = function (src, med) { var k = src + '|' + med; return srcs[k] = srcs[k] || { src: src, med: med, visita: 0, carrito: 0, checkout: 0, compra: 0, rev: 0, vs: {}, bs: {} }; };
     ev.forEach(function (e) { if (e.e === 'clic_link') return; var r = row(e.src, e.med); if (r[e.e] != null && e.e !== 'rev') r[e.e]++; if (e.e === 'visita') r.vs[e.sid] = 1; if (e.e === 'compra') r.bs[e.sid] = 1; });
-    orders.forEach(function (o) { row(o.src, o.med).rev += o.total || 0; });
+    orders.forEach(function (o) { row(o.src, o.med).rev += (o.total || 0) - (o.plat || 0); });
     var rows = Object.keys(srcs).map(function (k) { return srcs[k]; }).sort(function (a, b) { return b.rev - a.rev || b.visita - a.visita; });
     $('bySrc').innerHTML = rows.length ? rows.map(function (r) {
       return '<tr><td>' + M.esc(r.src || T('pn_direct')) + '</td><td><span class="bk-pn-pill ' + (isPaid(r.med) ? 'bk-pn-pd' : 'bk-pn-o') + '">' + (isPaid(r.med) ? T('pn_paid') : T('pn_org')) + '</span></td><td class="bk-pn-n">' + r.visita + '</td><td class="bk-pn-n">' + r.carrito + '</td><td class="bk-pn-n">' + r.checkout + '</td><td class="bk-pn-n">' + r.compra + '</td><td class="bk-pn-n">' + M.fmt(r.rev) + '</td><td class="bk-pn-n">' + pct(Object.keys(r.bs).length, Object.keys(r.vs).length) + '</td></tr>';
@@ -2184,6 +2227,7 @@ Brinco._ui.isOpen = () => !!(root && root.classList.contains('bk-open'));
         '<div class="bk-p-l bk-p-mut"><span>' + (pick ? T('pickup') : T('ship')) + '</span><span>' + (o.ship ? M.fmt(o.ship) : T('free')) + '</span></div>' +
         ((o.disc || o.discount) ? '<div class="bk-p-l bk-p-mut"><span>' + (o.coupon ? T('coupon') + ' ' + M.esc(o.coupon) : T('p_discount')) + '</span><span>−' + M.fmt(o.disc || o.discount) + '</span></div>' : '') +
         (o.itbis ? '<div class="bk-p-l bk-p-mut"><span>' + T('itbisLine', { p: Math.round((o.itbisTasa || 0.18) * 100) }) + '</span><span>' + M.fmt(o.itbis) + '</span></div>' : '') +
+        (o.plat ? '<div class="bk-p-l bk-p-mut"><span>' + T('plat') + '</span><span>' + M.fmt(o.plat) + '</span></div>' : '') +
         '<div class="bk-p-l bk-p-tot"><span>' + T('p_total') + '</span><span>' + M.fmt(o.total) + '</span></div>' +
         '<div class="bk-p-meta">' + (o.via === 'brinco' ? T('p_paidB') : '') + (BRANDS[card.brand] || T('card')) + ' •••• ' + M.esc(card.last4) +
           (o.auth ? ' · ' + T('p_auth') + ' ' + M.esc(o.auth) : '') +
