@@ -436,10 +436,29 @@ Brinco.track = function (name, data) {
   if (!name) return;
   let ev = store.get(KEY_EV, []);
   const o = Brinco.source();
-  ev.push({ e: String(name), t: Date.now(), sid: SID.id, src: o.source, med: o.medium, d: data || null });
+  const x = { e: String(name), t: Date.now(), sid: SID.id, src: o.source, med: o.medium, d: data || null };
+  ev.push(x);
   if (ev.length > 2000) ev = ev.slice(-2000);
   store.set(KEY_EV, ev);
+  // Copia al Wallet para los informes del negocio (visitas, platos vistos, carritos abandonados, sectores…)
+  SEND.q.push(Object.assign({ vid: VID }, x)); clearTimeout(SEND.t); SEND.t = setTimeout(evFlush, 4000);
 };
+const VID = (function () { try { let v = localStorage.getItem('brinco_vid'); if (!v) { v = Math.random().toString(36).slice(2, 12); localStorage.setItem('brinco_vid', v); } return v; } catch (e) { return SID.id; } })();
+const SEND = { q: [], t: 0 };
+function evFlush(beacon) {
+  try {
+    const base = typeof WALLET === 'string' ? WALLET : '';
+    const slug = Brinco.config && Brinco.config.negocio;
+    if (!base || !slug || !SEND.q.length) return;
+    const body = JSON.stringify({ m: slug, ev: SEND.q.splice(0, 60) });
+    const url = base + '/v1/ev';
+    if (beacon && navigator.sendBeacon) navigator.sendBeacon(url, new Blob([body], { type: 'text/plain' }));
+    else fetch(url, { method: 'POST', credentials: 'include', keepalive: true, headers: { 'Content-Type': 'text/plain' }, body }).catch(() => {});
+    if (SEND.q.length) SEND.t = setTimeout(evFlush, 1000);
+  } catch (e) {}
+}
+addEventListener('pagehide', () => evFlush(true));
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') evFlush(true); });
 const track = (e, d) => Brinco.track(e, d);
 
 // Lee el origen de la URL: ?src=ig (link corto), utm_* o fbclid/gclid
@@ -1398,7 +1417,7 @@ function charge() {
   // Historial del cliente: solo nombre del negocio y fecha
   if (B.session()) B.upsert(B.session().phone, (acc) => { if (acc) { acc.merchants = acc.merchants || []; acc.merchants.push({ name: C().nombre, at: Date.now() }); } return acc; });
   Brinco.orders.save(order);
-  track('compra', { total: order.total, metodo: order.via, orden: order.no });
+  track('compra', { total: order.total, metodo: order.via, orden: order.no, modo: order.mode, sector: order.address ? order.address.sector : '', tel: order.phone, items: order.items.map((c, i) => ({ sku: ((tt.items[i] || {}).sku || {}).p || c.name, qty: c.qty, unit: c.unit })) });
   try { if (cart() && cart().clear) cart().clear(); } catch (e) { console.error(e); }
   S.coupon = null; S.pendingPay = null;
   const fire = () => { try { window.dispatchEvent(new CustomEvent('brinco:order', { detail: order })); } catch (e) {} };
