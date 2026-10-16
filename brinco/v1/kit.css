@@ -382,3 +382,19 @@ html.bk-dark-site .bk-pill{border:1px solid rgba(255,255,255,.22);box-shadow:0 1
 .bk-pill:focus-visible{outline:3px solid #fff;outline-offset:2px}
 @keyframes bkPillBlink{50%{opacity:.35}}
 @media (prefers-reduced-motion:reduce){.bk-pill,.bk-pill.bk-show{transition:none}.bk-pill i{animation:none}}
+/* Dirección con GPS y autocompletado */
+.bk-geo{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;height:46px;border-radius:12px;border:1.5px dashed var(--bk-brand);background:transparent;color:var(--bk-ink);font:600 15px var(--bk-font-body);cursor:pointer}
+.bk-geo svg{color:var(--bk-brand)}
+.bk-geo:disabled{opacity:.6;cursor:progress}
+.bk-ac-wrap{position:relative}
+.bk-ac{position:absolute;left:0;right:0;top:calc(100% - 2px);z-index:5;background:#fff;border:1.5px solid #E2D6D2;border-radius:12px;box-shadow:0 12px 28px rgba(0,0,0,.14);overflow:hidden;margin-top:4px}
+.bk-ac button{display:flex;gap:10px;align-items:flex-start;width:100%;text-align:left;border:0;background:#fff;padding:11px 12px;cursor:pointer;font:400 14px var(--bk-font-body);color:var(--bk-ink)}
+.bk-ac button+button{border-top:1px solid #F0E9E6}
+.bk-ac button:hover,.bk-ac button:focus{background:#F7F3F1;outline:none}
+.bk-ac svg{flex:none;width:18px;height:18px;margin-top:1px;color:#8A7D78}
+.bk-ac span{display:flex;flex-direction:column;min-width:0}
+.bk-ac b{font-weight:600}
+.bk-ac small{color:#6E625D;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bk-map-wrap{display:flex;flex-direction:column;gap:6px}
+.bk-map{height:190px;border-radius:12px;overflow:hidden;border:1.5px solid #E2D6D2;background:#EEE}
+.bk-geo-note{margin:0;font-size:12.5px;color:#6E625D}

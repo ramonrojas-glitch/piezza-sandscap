@@ -81,7 +81,7 @@ const STR = {
     title: 'Finalizar pedido', back: 'Volver', close: 'Cerrar', with: 'con',
     payBrinco: 'Pagar con', orCard: 'o paga con tarjeta', howTitle: '¿Cómo lo quieres?', delivery: 'Delivery', pickup: 'Recoger en tienda',
     free: 'Gratis', min: 'min', yourData: 'Tus datos', name: 'Nombre', namePh: 'Tu nombre', nameErr: 'Escribe tu nombre.',
-    wa: 'WhatsApp', waErr: 'Escribe tu número de WhatsApp.', street: 'Dirección', streetPh: 'Calle, número, edificio, apto.', streetErr: 'Escribe la dirección.',
+    wa: 'WhatsApp', waErr: 'Escribe tu número de WhatsApp.', street: 'Dirección', streetPh: 'Calle, número, edificio, apto.', streetErr: 'Escribe la dirección.', geoUse: 'Usar mi ubicación', geoBusy: 'Buscando dónde estás…', geoDenied: 'No pudimos ver tu ubicación. Escribe la dirección o activa la ubicación del navegador.', geoPin: 'Mueve el pin hasta tu puerta', geoSaved: 'Ubicación exacta guardada para el mensajero', geoOutside: 'Esa zona no está en la lista de entrega. Escoge el sector más cercano.', mapLink: 'Ver en el mapa',
     sector: 'Sector', choose: 'Escoge…', sectorErr: 'Escoge el sector.', ref: 'Referencia', refPh: 'Frente a…', payment: 'Pago',
     saveBrinco: 'Guardar mis datos y mi tarjeta en {brinco} para pagar con un toque en cualquier negocio Brinco',
     saveBrincoSmall: 'Te enviamos un código por WhatsApp para confirmar. Brinco no guarda tu tarjeta: la guarda tu procesador de pago (AZUL, CardNet o MIO).',
@@ -172,7 +172,7 @@ const STR = {
     title: 'Checkout', back: 'Back', close: 'Close', with: 'with',
     payBrinco: 'Pay with', orCard: 'or pay by card', howTitle: 'How do you want it?', delivery: 'Delivery', pickup: 'Store pickup',
     free: 'Free', min: 'min', yourData: 'Your details', name: 'Name', namePh: 'Your name', nameErr: 'Enter your name.',
-    wa: 'WhatsApp', waErr: 'Enter your WhatsApp number.', street: 'Address', streetPh: 'Street, number, building, apt.', streetErr: 'Enter the address.',
+    wa: 'WhatsApp', waErr: 'Enter your WhatsApp number.', street: 'Address', streetPh: 'Street, number, building, apt.', streetErr: 'Enter the address.', geoUse: 'Use my location', geoBusy: 'Finding where you are…', geoDenied: 'We could not get your location. Type the address or allow location in your browser.', geoPin: 'Drag the pin to your door', geoSaved: 'Exact location saved for the rider', geoOutside: 'That area is not on the delivery list. Choose the closest neighborhood.', mapLink: 'View on map',
     sector: 'Neighborhood', choose: 'Choose…', sectorErr: 'Choose the neighborhood.', ref: 'Landmark', refPh: 'Across from…', payment: 'Payment',
     saveBrinco: 'Save my details and card in {brinco} to pay with one tap at any Brinco business',
     saveBrincoSmall: 'We will send you a WhatsApp code to confirm. Brinco does not store your card: your payment processor (AZUL, CardNet or MIO) does.',
@@ -1014,6 +1014,8 @@ VIEWS.checkout = function (o) {
   // Si ya llenó algo antes, se lo devolvemos
   const d = S.form || {};
   ['coName', 'coPhone', 'coStreet', 'coSector', 'coRef'].forEach((k) => { const el = $('#' + k, body); if (el && d[k]) el.value = d[k]; });
+  if (!S.geo && d.geo) S.geo = d.geo;
+  geoAddr('co');
   bindAzul('c');
   $('#coPhone', body).addEventListener('input', (ev) => { ev.target.value = fmtPhone(ev.target.value); setErr('coPhone', false); });
   ['coName', 'coStreet', 'coSector'].forEach((k) => { const el = $('#' + k, body); if (el) { el.addEventListener('input', () => setErr(k, false)); el.addEventListener('change', () => setErr(k, false)); } });
@@ -1058,9 +1060,134 @@ function freeHint() {
   const tt = totals('delivery'), left = g - (tt.sub - tt.disc);
   return `<p class="bk-free${left <= 0 ? ' bk-free-ok' : ''}" id="coFree">${left <= 0 ? t('freeOk') : t('freeLeft', { x: fmt(left) })}</p>`;
 }
+
+/* --- Dirección con GPS y autocompletado (Google Maps: Places API (New) + Geocoding) ---
+   brinco.json "mapsKey" o la llave de Sandscap (restringida a *.sandscap.com.do). Si Maps no carga, el formulario sigue igual. */
+const MAPS_KEY = () => C().mapsKey || 'AIzaSyCBSV4QKk6s423XvNZn87lZI3z9xY1SRYY';
+const SD = { lat: 18.4735, lng: -69.9310 };
+let GM = null;
+function gmaps() {
+  if (GM) return GM;
+  GM = new Promise((res, rej) => {
+    if (window.google && window.google.maps && window.google.maps.importLibrary) { res(window.google.maps); return; }
+    window.__bkMapsReady = () => res(window.google.maps);
+    const sc = document.createElement('script');
+    sc.src = 'https://maps.googleapis.com/maps/api/js?key=' + encodeURIComponent(MAPS_KEY()) + '&v=weekly&language=' + (LANG === 'en' ? 'en' : 'es') + '&region=DO&loading=async&callback=__bkMapsReady';
+    sc.async = true; sc.onerror = () => { GM = null; rej(new Error('maps')); };
+    document.head.appendChild(sc);
+    setTimeout(() => rej(new Error('maps-timeout')), 15000);
+  });
+  return GM;
+}
+const fold = (x) => String(x || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+function shortAddr(full) {
+  return String(full || '').replace(/,?\s*(Rep[uú]blica Dominicana|Dominican Republic)\s*$/i, '').replace(/,?\s*\d{5}\b/g, '').replace(/\s+,/g, ',').trim();
+}
+// Componentes de Google -> sector de brinco.json (Naco, Piantini…)
+function pickSector(comps) {
+  const opts = C().sectores || [];
+  const names = (comps || []).filter((c) => (c.types || []).some((tp) => /neighborhood|sublocality|locality/.test(tp))).map((c) => fold(c.longText || c.long_name));
+  for (const n of names) { const hit = opts.find((o) => fold(o) === n || n.includes(fold(o)) || fold(o).includes(n)); if (hit) return hit; }
+  return '';
+}
+function geoAddr(px) {
+  const st = $('#' + px + 'Street', body), sec = $('#' + px + 'Sector', body);
+  if (!st || st.dataset.bkGeo) return;
+  st.dataset.bkGeo = '1';
+  const fld = st.closest('.bk-fld');
+  fld.insertAdjacentHTML('beforebegin', `<button type="button" class="bk-geo" id="${px}Geo">${ICONS.pin}<span>${t('geoUse')}</span></button>`);
+  fld.classList.add('bk-ac-wrap');
+  st.insertAdjacentHTML('afterend', `<div class="bk-ac" id="${px}Ac" role="listbox" hidden></div>`);
+  fld.insertAdjacentHTML('afterend', `<div class="bk-map-wrap" id="${px}MapWrap" hidden><div class="bk-map" id="${px}Map"></div><p class="bk-geo-note" id="${px}GeoNote">${t('geoPin')}</p></div>`);
+  st.setAttribute('autocomplete', 'off');
+  const ac = $('#' + px + 'Ac', body), btn = $('#' + px + 'Geo', body), note = $('#' + px + 'GeoNote', body);
+  let token = null, timer = null, map = null, marker = null, seq = 0;
+  const setGeo = (lat, lng, src) => { S.geo = { lat: +lat.toFixed(6), lng: +lng.toFixed(6), src }; S.form = Object.assign(S.form || {}, { geo: S.geo }); };
+  const applyComps = (comps) => {
+    if (!sec) return;
+    const s = pickSector(comps);
+    if (s) { sec.value = s; setErr(px + 'Sector', false); note.textContent = t('geoSaved'); }
+    else if (!sec.value) note.textContent = t('geoOutside');
+  };
+  async function showMap(lat, lng) {
+    const g = await gmaps(); const { Map } = await g.importLibrary('maps'); const { Marker } = await g.importLibrary('marker');
+    $('#' + px + 'MapWrap', body).hidden = false;
+    const pos = { lat, lng };
+    if (!map) {
+      map = new Map($('#' + px + 'Map', body), { center: pos, zoom: 17, disableDefaultUI: true, zoomControl: true, gestureHandling: 'greedy', clickableIcons: false });
+      marker = new Marker({ position: pos, map, draggable: true });
+      marker.addListener('dragend', () => { const p = marker.getPosition(); setGeo(p.lat(), p.lng(), 'pin'); reverse(p.lat(), p.lng(), false); });
+      map.addListener('click', (e) => { marker.setPosition(e.latLng); setGeo(e.latLng.lat(), e.latLng.lng(), 'pin'); reverse(e.latLng.lat(), e.latLng.lng(), false); });
+    } else { map.setCenter(pos); marker.setPosition(pos); }
+  }
+  async function reverse(lat, lng, fillStreet) {
+    try {
+      const g = await gmaps(); const { Geocoder } = await g.importLibrary('geocoding');
+      const r = await new Geocoder().geocode({ location: { lat, lng }, language: LANG === 'en' ? 'en' : 'es' });
+      const best = (r.results || []).find((x) => !(x.types || []).includes('plus_code')) || (r.results || [])[0];
+      if (!best) return;
+      if (fillStreet || !st.value.trim()) { st.value = shortAddr(best.formatted_address); setErr(px + 'Street', false); }
+      applyComps(best.address_components);
+    } catch (e) {}
+  }
+  btn.addEventListener('click', () => {
+    if (!navigator.geolocation) { note.textContent = t('geoDenied'); $('#' + px + 'MapWrap', body).hidden = false; return; }
+    btn.disabled = true; btn.querySelector('span').textContent = t('geoBusy');
+    navigator.geolocation.getCurrentPosition(async (p) => {
+      btn.disabled = false; btn.querySelector('span').textContent = t('geoUse');
+      const { latitude: lat, longitude: lng } = p.coords;
+      setGeo(lat, lng, 'gps'); track('geo_gps');
+      try { await showMap(lat, lng); } catch (e) {}
+      reverse(lat, lng, true);
+    }, () => {
+      btn.disabled = false; btn.querySelector('span').textContent = t('geoUse');
+      const w = $('#' + px + 'MapWrap', body); w.hidden = false; $('#' + px + 'Map', body).hidden = true; note.textContent = t('geoDenied');
+    }, { enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 });
+  });
+  const close = () => { ac.hidden = true; ac.innerHTML = ''; };
+  st.addEventListener('input', () => {
+    clearTimeout(timer);
+    const q = st.value.trim();
+    if (q.length < 3) { close(); return; }
+    timer = setTimeout(async () => {
+      const my = ++seq;
+      try {
+        const g = await gmaps(); const { AutocompleteSessionToken, AutocompleteSuggestion } = await g.importLibrary('places');
+        token = token || new AutocompleteSessionToken();
+        const center = S.geo ? { lat: S.geo.lat, lng: S.geo.lng } : SD;
+        const r = await AutocompleteSuggestion.fetchAutocompleteSuggestions({ input: q, sessionToken: token, includedRegionCodes: ['do'], language: LANG === 'en' ? 'en' : 'es', locationBias: { center, radius: 25000 } });
+        if (my !== seq) return;
+        const list = (r.suggestions || []).map((x) => x.placePrediction).filter(Boolean).slice(0, 5);
+        if (!list.length) { close(); return; }
+        ac.innerHTML = list.map((pp, i) => `<button type="button" role="option" data-i="${i}">${ICONS.pin}<span><b>${esc(pp.mainText ? pp.mainText.toString() : pp.text.toString())}</b><small>${esc(pp.secondaryText ? pp.secondaryText.toString() : '')}</small></span></button>`).join('');
+        ac.hidden = false;
+        $$('button', ac).forEach((b) => b.addEventListener('mousedown', async (ev) => {
+          ev.preventDefault();
+          const pp = list[+b.dataset.i]; close();
+          st.value = shortAddr(pp.text.toString()); setErr(px + 'Street', false);
+          try {
+            const place = pp.toPlace(); await place.fetchFields({ fields: ['formattedAddress', 'location', 'addressComponents'] });
+            token = null;
+            if (place.formattedAddress) st.value = shortAddr(place.formattedAddress);
+            if (place.location) { const la = place.location.lat(), ln = place.location.lng(); setGeo(la, ln, 'buscador'); track('geo_buscador'); showMap(la, ln).catch(() => {}); }
+            applyComps(place.addressComponents);
+          } catch (e) {}
+        }));
+      } catch (e) { close(); }
+    }, 220);
+  });
+  st.addEventListener('blur', () => setTimeout(close, 150));
+  st.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') close(); });
+  // si ya había una ubicación en este pedido, se vuelve a mostrar
+  if (S.geo) showMap(S.geo.lat, S.geo.lng).then(() => { note.textContent = t('geoSaved'); }).catch(() => {});
+  gmaps().catch(() => { btn.hidden = true; });   // sin Maps: solo el formulario de siempre
+}
+const mapURL = (a) => (a && a.lat != null ? 'https://www.google.com/maps/search/?api=1&query=' + a.lat + ',' + a.lng : '');
+
 function keepForm() {
   S.form = {};
   ['coName', 'coPhone', 'coStreet', 'coSector', 'coRef'].forEach((k) => { const el = $('#' + k, body); if (el) S.form[k] = el.value; });
+  if (S.geo) S.form.geo = S.geo;
   store.set('brinco_form', S.form);   // solo nombre, WhatsApp y dirección; nunca datos de tarjeta
 }
 
@@ -1079,7 +1206,7 @@ function payWithCard() {
   keepForm();
   const save = $('#coSave', body).checked;
   const tt = totals();
-  S.pendingPay = { via: 'tarjeta', name, phone: phoneDigits(phone), mode: S.mode, address: S.mode === 'delivery' ? { street, sector, ref, label: t('home') } : null, card, save, total: tt.total,
+  S.pendingPay = { via: 'tarjeta', name, phone: phoneDigits(phone), mode: S.mode, address: S.mode === 'delivery' ? Object.assign({ street, sector, ref, label: t('home') }, S.geo ? { lat: S.geo.lat, lng: S.geo.lng } : {}) : null, card, save, total: tt.total,
     store: S.mode === 'pickup' ? curStore() : null, prog: progOn() ? S.prog : null };
   wipeAzul('c');
   track('pago_enviado', { total: tt.total, metodo: 'tarjeta', guardar: save });
@@ -1289,7 +1416,7 @@ VIEWS.done = function (o) {
       ${o.disc ? `<div class="bk-l bk-dim"><span>${t('coupon')} ${esc(o.coupon || '')}</span><span>− ${fmt(o.disc)}</span></div>` : ''}
       ${o.itbis ? `<div class="bk-l bk-dim"><span>${t('itbisLine', { p: Math.round((o.itbisTasa || 0.18) * 100) })}</span><span>${fmt(o.itbis)}</span></div>` : ''}
       <div class="bk-l bk-rtot"><span>${t('paid')}</span><span>${fmt(o.total)}</span></div>
-      <div class="bk-rmeta">${o.via === 'brinco' ? t('paidBrinco') : ''}${brandName(o.card.brand)} •••• ${esc(o.card.last4)} · ${t('auth')} ${esc(o.auth)}${o.address ? '<br>' + t('deliverTo') + ': ' + esc(o.address.street) + ', ' + esc(o.address.sector) : ''}${o.tienda && stores().length > 1 ? '<br>' + t('pickAt') + ': ' + esc(o.tienda.nombre) + (o.tienda.direccion ? ', ' + esc(o.tienda.direccion) : '') : ''}</div>
+      <div class="bk-rmeta">${o.via === 'brinco' ? t('paidBrinco') : ''}${brandName(o.card.brand)} •••• ${esc(o.card.last4)} · ${t('auth')} ${esc(o.auth)}${o.address ? '<br>' + t('deliverTo') + ': ' + esc(o.address.street) + ', ' + esc(o.address.sector) + (o.address.lat != null ? ' · <a href="' + mapURL(o.address) + '" target="_blank" rel="noopener">' + t('mapLink') + '</a>' : '') : ''}${o.tienda && stores().length > 1 ? '<br>' + t('pickAt') + ': ' + esc(o.tienda.nombre) + (o.tienda.direccion ? ', ' + esc(o.tienda.direccion) : '') : ''}</div>
     </div>
     ${o.brincoNew ? `<div class="bk-bok">${bword(18)}<br><b>${t('brincoReady')}</b> ${t('brincoReadyTx')}</div>` : ''}
     <button class="bk-link" type="button" data-x>${t('keepShopping')}</button>
@@ -1396,6 +1523,7 @@ VIEWS.bProfile = function () {
   let lbl = t('home');
   $$('[data-lbl]', body).forEach((b) => b.addEventListener('click', () => { lbl = b.dataset.lbl; $$('[data-lbl]', body).forEach((x) => x.setAttribute('aria-pressed', String(x === b))); }));
   ['bName', 'bEmail', 'bStreet', 'bSector'].forEach((k) => { const el = $('#' + k, body); if (el) el.addEventListener('input', () => setErr(k, false)); });
+  if (needAddr) geoAddr('b');
   $('#bNext', body).addEventListener('click', () => {
     const name = $('#bName', body).value.trim(), email = $('#bEmail', body).value.trim();
     const street = needAddr ? $('#bStreet', body).value.trim() : '', sector = needAddr ? $('#bSector', body).value : '', ref = needAddr ? $('#bRef', body).value.trim() : '';
@@ -1412,7 +1540,7 @@ VIEWS.bProfile = function () {
       acc.addresses = acc.addresses || []; acc.cards = acc.cards || [];
       acc.name = name; acc.email = email;
       if (!acc.consents || !acc.consents.some((x) => x.type === 'cuenta')) B.consent(acc, 'cuenta', CONSENT_ACC);
-      if (needAddr && !acc.addresses.some((a) => a.street === street)) acc.addresses.push({ id: Date.now(), label: lbl, street, sector, ref, main: !acc.addresses.length });
+      if (needAddr && !acc.addresses.some((a) => a.street === street)) acc.addresses.push(Object.assign({ id: Date.now(), label: lbl, street, sector, ref, main: !acc.addresses.length }, S.geo ? { lat: S.geo.lat, lng: S.geo.lng } : {}));
       return acc;
     });
     track('brinco_cuenta', { nueva: true });
@@ -1896,7 +2024,7 @@ Brinco._ui.isOpen = () => !!(root && root.classList.contains('bk-open'));
     $('orders').innerHTML = list.length ? list.map(function (o) {
       var c = o.card || {};
       return '<tr><td><a href="/pedido/?o=' + encodeURIComponent(o.no) + '"><b>' + M.esc(o.no) + '</b></a></td><td>' + new Date(o.at).toLocaleString(M.loc(), { dateStyle: 'short', timeStyle: 'short' }) + '</td><td>' + M.esc(o.name) + '</td>' +
-        '<td>' + (o.mode === 'pickup' ? T('pn_pickup') + (o.tienda && o.tienda.nombre && (M.cfg().tiendas || []).length > 1 ? ' · ' + M.esc(o.tienda.nombre) : '') : T('delivery') + (o.address && o.address.sector ? ' · ' + M.esc(o.address.sector) : '')) + '</td>' +
+        '<td>' + (o.mode === 'pickup' ? T('pn_pickup') + (o.tienda && o.tienda.nombre && (M.cfg().tiendas || []).length > 1 ? ' · ' + M.esc(o.tienda.nombre) : '') : T('delivery') + (o.address && o.address.sector ? ' · ' + M.esc(o.address.sector) : '') + (o.address && o.address.lat != null ? ' · <a href="https://www.google.com/maps/search/?api=1&query=' + o.address.lat + ',' + o.address.lng + '" target="_blank" rel="noopener">' + T('mapLink') + '</a>' : '')) + '</td>' +
         '<td>' + (o.via === 'brinco' ? '<span class="bk-pn-pill bk-pn-brinco">Brinco</span> ' : '') + (BRAND[c.brand] || T('card')) + ' ' + M.esc(c.last4) + '</td>' +
         '<td><span class="bk-pn-pill ' + (isPaid(o.med) ? 'bk-pn-pd' : 'bk-pn-o') + '">' + M.esc(o.src || T('pn_direct')) + '</span></td><td class="bk-pn-n">' + M.fmt(o.total) + '</td></tr>';
     }).join('') : '<tr><td colspan="7" class="bk-pn-empty">' + T('pn_noOrders') + '</td></tr>';
@@ -2059,7 +2187,7 @@ Brinco._ui.isOpen = () => !!(root && root.classList.contains('bk-open'));
         '<div class="bk-p-l bk-p-tot"><span>' + T('p_total') + '</span><span>' + M.fmt(o.total) + '</span></div>' +
         '<div class="bk-p-meta">' + (o.via === 'brinco' ? T('p_paidB') : '') + (BRANDS[card.brand] || T('card')) + ' •••• ' + M.esc(card.last4) +
           (o.auth ? ' · ' + T('p_auth') + ' ' + M.esc(o.auth) : '') +
-          (o.address && !pick ? '<br>' + T('p_deliver') + ': ' + M.esc(o.address.street) + (o.address.sector ? ', ' + M.esc(o.address.sector) : '') : '') +
+          (o.address && !pick ? '<br>' + T('p_deliver') + ': ' + M.esc(o.address.street) + (o.address.sector ? ', ' + M.esc(o.address.sector) : '') + (o.address.lat != null ? ' · <a href="https://www.google.com/maps/search/?api=1&query=' + o.address.lat + ',' + o.address.lng + '" target="_blank" rel="noopener">' + T('mapLink') + '</a>' : '') : '') +
           (pick && o.tienda && o.tienda.nombre ? '<br>' + T('pickAt') + ': ' + M.esc(o.tienda.nombre) + (o.tienda.direccion ? ', ' + M.esc(o.tienda.direccion) : '') : '') +
           (o.phone ? '<br>' + T('p_wa') + ': ' + M.esc(M.fmtPhone(o.phone)) : '') + '</div>' +
       '</section>' +
