@@ -1,10 +1,10 @@
-/*! Brinco Kit v1 · Sandscap · 2026-10-14T18:54Z */
+/*! Brinco Kit v1 · Sandscap · 2026-10-16T00:00Z */
 (function () {
 'use strict';
 
 /* --- src/core/00-base.js --- */
 /* ===== Brinco Kit · base: namespace, helpers ===== */
-const VERSION = '1.3.0';
+const VERSION = '1.4.0';
 const SCRIPT = document.currentScript || (function () {
   const s = document.querySelectorAll('script[src*="kit.js"]'); return s[s.length - 1] || null;
 })();
@@ -107,6 +107,9 @@ const STR = {
     doneTitle: 'Listo',
     bTagline: 'Paga con un toque', bLoginTx: 'Entra con tu número de WhatsApp. Sin contraseñas: te mandamos un código.',
     waNumber: 'Número de WhatsApp', sendCode: 'Enviar código por WhatsApp',
+    bLoginTxG: 'Entra con Google o con tu número de WhatsApp. Sin contraseñas.',
+    gLinkTx: 'Ya confirmamos tu Google ({email}). Para terminar, confirma tu WhatsApp con un código: así tu Cuenta Brinco queda lista también con Google.',
+    gIn: 'Entraste a Brinco con Google.', gNeedPhone: 'Ya confirmamos tu Google. Al pagar con Brinco te pedimos tu WhatsApp una sola vez.',
     bTerms: 'Al continuar aceptas los Términos de la Cuenta Brinco y su Política de privacidad. Nunca usamos SMS.',
     bCreate: 'Crea tu Cuenta Brinco', bCreateTx: 'Una sola vez. Después pagas con un toque en cualquier negocio Brinco.',
     email: 'Correo', optional: '(opcional)', emailErr: 'Correo no válido.', addrTitle: 'Dirección de entrega', home: 'Casa', work: 'Trabajo', label: 'Etiqueta',
@@ -195,6 +198,9 @@ const STR = {
     doneTitle: 'Done',
     bTagline: 'Pay with one tap', bLoginTx: 'Sign in with your WhatsApp number. No passwords: we send you a code.',
     waNumber: 'WhatsApp number', sendCode: 'Send code on WhatsApp',
+    bLoginTxG: 'Sign in with Google or with your WhatsApp number. No passwords.',
+    gLinkTx: 'Your Google account ({email}) is confirmed. To finish, confirm your WhatsApp with a code: your Brinco Account will also work with Google.',
+    gIn: 'You signed in to Brinco with Google.', gNeedPhone: 'Your Google account is confirmed. When you pay with Brinco we will ask for your WhatsApp just once.',
     bTerms: 'By continuing you accept the Brinco Account Terms and Privacy Policy. We never use SMS.',
     bCreate: 'Create your Brinco Account', bCreateTx: 'Just once. Then you pay with one tap at any Brinco business.',
     email: 'Email', optional: '(optional)', emailErr: 'Invalid email.', addrTitle: 'Delivery address', home: 'Home', work: 'Work', label: 'Label',
@@ -665,7 +671,19 @@ const W = {
   loaded: false,
   refresh() { W.ready = W.call('/me').then(W.apply, () => {}).then(() => { W.loaded = true; }); return W.ready; },
   sendCode(phone) { return W.call('/otp/send', 'POST', { phone }).then((d) => { W.otpMode = d.test_mode ? 'test' : 'whatsapp'; W.hadAccount = !!d.has_account; return d; }); },
-  verify(phone, code, name) { return W.call('/otp/verify', 'POST', { phone, code, name: name || '' }).then((d) => { W.apply(d); return d; }); },
+  // gLink: Google ya confirmado pero sin Cuenta Brinco todavía → el boleto liga ese correo al confirmar el WhatsApp
+  gLink: null,
+  verify(phone, code, name) {
+    return W.call('/otp/verify', 'POST', { phone, code, name: name || (W.gLink && W.gLink.name) || '', google: W.gLink ? W.gLink.google : undefined })
+      .then((d) => { W.apply(d); W.gLink = null; return d; });
+  },
+  // Entrar con Google: el pase de Cuenta Sandscap (site 'brinco') lo verifica el servidor de Brinco.
+  google(pase) {
+    return W.call('/auth/google', 'POST', { pase }).then((d) => {
+      if (d.account) { W.apply(d); W.gLink = null; } else if (d.necesitaTelefono) W.gLink = { google: d.google, email: d.email || '', name: d.name || '' };
+      return d;
+    });
+  },
   saveCard(card, text) {
     return W.call('/cards', 'POST', { merchant: C().negocio, token: card.token, brand: card.brand, last4: card.last4, exp: card.exp, processor: 'AZUL',
       consent: { accepted: true, text, version: '2026-10' } }).then((d) => { W.cards = d.cards || W.cards; return d; });
@@ -699,7 +717,7 @@ const B = !W.on ? demo : {
   me() {
     if (!W.me) return null;
     const p = P.get(W.me.phone);
-    return { phone: W.me.phone, name: W.me.name || p.name || '', email: p.email || '', addresses: p.addresses || [], consents: p.consents || [], merchants: [],
+    return { phone: W.me.phone, name: W.me.name || p.name || '', email: p.email || W.me.email || '', addresses: p.addresses || [], consents: p.consents || [], merchants: [],
       cards: W.cards.map((c, i) => ({ id: c.id, brand: String(c.brand || '').toLowerCase(), last4: c.last4, exp: c.exp, processor: String(c.processor || '').toLowerCase(), main: i === 0 })) };
   },
   login() {},          // la sesión la abre el servidor de Brinco cuando el código es correcto
@@ -713,6 +731,21 @@ const B = !W.on ? demo : {
   consent: demo.consent
 };
 if (W.on) W.refresh();
+// «Continuar con Google» (Cuenta Sandscap): cliente.js se carga solo cuando se muestra el botón o se vuelve de Google,
+// así el HTML de cada tienda no cambia.
+const G_SITE = 'brinco';
+const CUENTA_JS = (SCRIPT && SCRIPT.getAttribute('data-cuenta')) || 'https://cuenta.sandscap.com.do/cliente.js';
+let gLoad = null;
+function loadGoogle() {
+  if (window.SandscapGoogle) return Promise.resolve(window.SandscapGoogle);
+  return gLoad || (gLoad = new Promise((ok, ko) => {
+    const s = document.createElement('script');
+    s.src = CUENTA_JS; s.async = true;
+    s.onload = () => (window.SandscapGoogle ? ok(window.SandscapGoogle) : ko(new Error('google')));
+    s.onerror = () => { gLoad = null; ko(new Error('google')); };
+    document.head.appendChild(s);
+  }));
+}
 Brinco._account = B;
 Brinco._wallet = W;
 Brinco._shared = SHARED;
@@ -1271,19 +1304,57 @@ function startBrinco() {
   VIEWS.bLogin();
 }
 
+// Google solo con el servidor de Brinco y fuera de Instagram/Facebook/TikTok (Google no deja entrar desde esos navegadores)
+const googleOK = () => W.on && !INAPP;
+// Después de entrar con Google: mismo camino que después del código de WhatsApp
+function afterGoogle(d, o) {
+  o = o || {};
+  if (d && d.account) {
+    const acc = B.me();
+    if (acc && acc.cards && acc.cards.length) { S.bNew = false; VIEWS.bSummary({ root: true }); }
+    else { S.bNew = false; VIEWS.bProfile(); }
+  } else VIEWS.bLogin({ replace: !!o.replace });
+}
+function mountGoogle(el) {
+  if (!el) return;
+  loadGoogle().then((G) => {
+    if (!el.isConnected) return;
+    G.boton(el, { site: G_SITE, volverA: 'brinco', alEntrar: (pase) => W.google(pase).then((d) => { track('google_ok', { nueva: !d.account }); afterGoogle(d, { replace: true }); }) });
+  }, () => { el.hidden = true; });
+}
+// Al volver de Google la página se recarga: se recibe el pase y se sigue en la hoja Brinco si hay carrito.
+function googleReturn() {
+  if (!W.on || !/sandscap_(pase|error)=/.test(location.hash)) return;
+  loadGoogle().then((G) => Brinco.ready(() => W.ready.then(() => {
+    const r = G.recibir(G_SITE);
+    if (!r) return;
+    if (r.error) { toast(r.error, 6000); return; }
+    W.google(r.pase).then((d) => {
+      track('google_ok', { nueva: !d.account });
+      const c = cart();
+      if (c && (c.items() || []).length) { open(); afterGoogle(d); }
+      else toast(d.account ? t('gIn') : t('gNeedPhone'), 6000);
+    }, (e) => toast(e.message, 6000));
+  })), () => {});
+}
+
 VIEWS.bLogin = function (o) {
   o = o || {};
+  const g = googleOK();
   show('bLogin', `
     <div class="bk-center bk-stack">
       ${bword(34)}
       <p class="bk-h3">${t('bTagline')}</p>
-      <p class="bk-muted">${t('bLoginTx')}</p>
+      <p class="bk-muted">${t(g && !W.gLink ? 'bLoginTxG' : 'bLoginTx')}</p>
     </div>
     ${o.msg ? `<p class="bk-info-msg" role="status">${esc(o.msg)}</p>` : ''}
+    ${g && W.gLink ? `<p class="bk-info-msg" role="status">${t('gLinkTx', { email: esc(W.gLink.email) })}</p>` : ''}
+    ${g && !W.gLink ? '<div class="bk-gslot" id="bGoogle"></div>' : ''}
     <div class="bk-fld"><label for="bPhone">${t('waNumber')}</label><input id="bPhone" type="tel" inputmode="tel" autocomplete="tel-national" placeholder="809-555-1234" autofocus><span class="bk-err">${t('waErr')}</span></div>
     <button class="bk-pay bk-blue" type="button" id="bSend">${t('sendCode')}</button>
     ${vaultHTML(false)}
     <p class="bk-muted bk-center bk-small">${t('bTerms')}</p>`, { brinco: true, replace: o.replace });
+  if (g && !W.gLink) mountGoogle($('#bGoogle', body));
   const ph = $('#bPhone', body);
   if (o.phone) ph.value = fmtPhone(o.phone);
   else if (S.form && S.form.coPhone) ph.value = S.form.coPhone;
@@ -1473,6 +1544,7 @@ function close() {
 window.addEventListener('brinco:lang', () => { if (root && !root.classList.contains('bk-open')) { root.remove(); root = null; body = null; } });
 Brinco.checkout = open;
 Brinco.closeCheckout = close;
+googleReturn();
 Brinco._ui.isOpen = () => !!(root && root.classList.contains('bk-open'));
 
 /* --- src/modules/header.js --- */
