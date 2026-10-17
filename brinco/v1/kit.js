@@ -667,13 +667,14 @@ Brinco._vault = { html: vaultHTML, footerHTML: vaultFooterHTML, fill: fillVaultF
 
 /* --- src/core/70-brinco.js --- */
 /* ===== Brinco Kit · Cuenta Brinco =====
-   En *.sandscap.com.do la cuenta vive en el servidor de Brinco (brinco.sandscap.com.do):
+   En *.brinco.do (y *.sandscap.com.do) la cuenta vive en el servidor de Brinco (pay.brinco.do):
    el código de WhatsApp se revisa allá, la sesión es una cookie HttpOnly que el sitio no puede leer ni falsificar,
    y las tarjetas son tokens del adquiriente que nunca llegan al navegador.
    En este equipo solo quedan las direcciones de entrega y el correo (perfil local).
    Fuera de sandscap.com.do (pruebas en localhost) se usa el modo demo, sin servidor y sin cobros. */
-const SHARED = /(^|\.)sandscap\.com\.do$/.test(location.hostname) ? 'sandscap.com.do' : null;
-const WALLET = ((SCRIPT && SCRIPT.getAttribute('data-wallet')) || (SHARED ? 'https://brinco.sandscap.com.do' : '')).replace(/\/$/, '');
+// Las tiendas viven en <negocio>.brinco.do (antes <negocio>.sandscap.com.do): el Wallet está en pay.brinco.do.
+const SHARED = /(^|\.)brinco\.do$/.test(location.hostname) ? 'brinco.do' : /(^|\.)sandscap\.com\.do$/.test(location.hostname) ? 'sandscap.com.do' : null;
+const WALLET = ((SCRIPT && SCRIPT.getAttribute('data-wallet')) || (SHARED === 'brinco.do' ? 'https://pay.brinco.do' : SHARED ? 'https://brinco.sandscap.com.do' : '')).replace(/\/$/, '');
 // La cuenta ya no viaja en cookies compartidas ni se guarda en el localStorage: se borra lo que dejaron versiones anteriores
 (function cleanup() {
   if (SHARED) ['brinco_acc', 'brinco_s'].forEach((n) => { try { document.cookie = n + '=; domain=.' + SHARED + '; path=/; max-age=0; secure; samesite=lax'; } catch (e) {} });
@@ -1086,7 +1087,7 @@ function freeHint() {
 }
 
 /* --- Dirección con GPS y autocompletado (Google Maps: Places API (New) + Geocoding) ---
-   brinco.json "mapsKey" o la llave de Sandscap (restringida a *.sandscap.com.do). Si Maps no carga, el formulario sigue igual. */
+   brinco.json "mapsKey" o la llave de Sandscap (restringida a *.sandscap.com.do y *.brinco.do). Si Maps no carga, el formulario sigue igual. */
 const MAPS_KEY = () => C().mapsKey || 'AIzaSyCBSV4QKk6s423XvNZn87lZI3z9xY1SRYY';
 const SD = { lat: 18.4735, lng: -69.9310 };
 let GM = null;
